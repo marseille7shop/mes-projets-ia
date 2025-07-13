@@ -3,202 +3,817 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Projets IA - Tableau de Bord</title>
+    <title>Centre de Commande Pro - Gestionnaire de Projets</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Styles personnalisés pour le drag and drop */
-        .dragging { opacity: 0.5; }
-        .drag-over { background-color: rgba(59, 130, 246, 0.1); }
+        /* Variables CSS pour le thème */
+        :root {
+            --bg-primary: 17, 24, 39;
+            --bg-secondary: 31, 41, 55;
+            --text-primary: 255, 255, 255;
+            --accent: 59, 130, 246;
+        }
+        
+        [data-theme="light"] {
+            --bg-primary: 249, 250, 251;
+            --bg-secondary: 255, 255, 255;
+            --text-primary: 17, 24, 39;
+            --accent: 59, 130, 246;
+        }
+        
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes celebrate {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes focusMode {
+            0% { transform: scale(0.95); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .card-enter { animation: slideIn 0.3s ease-out; }
+        .celebrate { animation: celebrate 0.5s ease-in-out; }
+        .pulse { animation: pulse 2s infinite; }
+        .focus-mode-active { animation: focusMode 0.5s ease-out; }
+        
+        .dragging { opacity: 0.5; transform: scale(0.95); }
+        .drag-over { background-color: rgba(59, 130, 246, 0.1); transform: scale(1.02); }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(var(--bg-secondary), 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(var(--text-primary), 0.1);
+        }
+        
+        /* Progress bar */
+        .progress-bar {
+            transition: width 0.5s ease-out;
+        }
+        
+        /* Smooth transitions */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+        }
+        
+        /* Custom scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(var(--text-primary), 0.1);
+            border-radius: 3px;
+        }
+        
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(var(--text-primary), 0.2);
+            border-radius: 3px;
+        }
+        
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            position: absolute;
+            animation: confetti-fall 3s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Timeline view */
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(var(--accent), 0.3);
+        }
+        
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: 20px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgb(var(--accent));
+        }
+        
+        /* Focus mode */
+        .blur-effect {
+            filter: blur(3px);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        /* Sound toggle animation */
+        .sound-wave {
+            display: inline-block;
+            width: 3px;
+            height: 15px;
+            margin: 0 2px;
+            background: currentColor;
+            animation: wave 0.5s ease-in-out infinite;
+        }
+        
+        .sound-wave:nth-child(2) { animation-delay: 0.1s; }
+        .sound-wave:nth-child(3) { animation-delay: 0.2s; }
+        
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1); }
+        }
+        
+        /* Chart container */
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin: 20px 0;
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white">
-    <div id="app" class="min-h-screen p-4">
+<body class="min-h-screen transition-colors" style="background: rgb(var(--bg-primary)); color: rgb(var(--text-primary))">
+    <div id="app" class="p-4">
         <div class="max-w-7xl mx-auto">
-            <!-- Header -->
-            <div class="mb-8">
-                <div class="flex justify-between items-start">
+            <!-- Header Pro -->
+            <div class="mb-8 glass rounded-2xl p-6">
+                <div class="flex flex-wrap justify-between items-start gap-4">
                     <div>
-                        <h1 class="text-3xl font-bold mb-2">Mes Projets IA</h1>
-                        <p class="text-gray-400">Tableau de bord pour suivre l'avancement de vos projets</p>
-                    </div>
-                    <div class="text-right">
-                        <button onclick="exportData()" class="text-sm text-gray-400 hover:text-white mb-2">
-                            Exporter les données
-                        </button>
-                        <p class="text-xs text-gray-500" id="lastSaved">
-                            Sauvegarde auto : --:--:--
+                        <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            Centre de Commande Pro 🚀
+                        </h1>
+                        <p class="text-gray-400">
+                            <span id="greeting">Bonjour</span> ! 
+                            <span id="motivational-quote" class="italic"></span>
                         </p>
                     </div>
+                    
+                    <!-- Contrôles -->
+                    <div class="flex flex-wrap gap-2">
+                        <!-- Mode sombre/clair -->
+                        <button onclick="toggleTheme()" class="p-2 glass rounded-lg hover:bg-gray-600" title="Changer le thème">
+                            <span id="theme-icon">🌙</span>
+                        </button>
+                        
+                        <!-- Son on/off -->
+                        <button onclick="toggleSound()" class="p-2 glass rounded-lg hover:bg-gray-600" title="Son">
+                            <span id="sound-icon">🔊</span>
+                        </button>
+                        
+                        <!-- Mode focus -->
+                        <button onclick="toggleFocusMode()" class="p-2 glass rounded-lg hover:bg-gray-600" title="Mode Focus">
+                            🎯
+                        </button>
+                        
+                        <!-- Vue Timeline -->
+                        <button onclick="toggleView()" class="p-2 glass rounded-lg hover:bg-gray-600" title="Changer la vue">
+                            📊
+                        </button>
+                        
+                        <!-- Recherche -->
+                        <input type="text" id="searchInput" placeholder="🔍 Rechercher..." 
+                               onkeyup="searchProjects(this.value)"
+                               class="px-3 py-2 glass rounded-lg w-40 focus:w-60 transition-all">
+                    </div>
+                </div>
+                
+                <!-- Statistiques avancées -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <div class="glass rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-blue-400" id="total-projects">0</div>
+                        <div class="text-xs text-gray-400">Total projets</div>
+                    </div>
+                    <div class="glass rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-yellow-400" id="active-projects">0</div>
+                        <div class="text-xs text-gray-400">En cours</div>
+                    </div>
+                    <div class="glass rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-green-400" id="completed-count">0</div>
+                        <div class="text-xs text-gray-400">Terminés</div>
+                    </div>
+                    <div class="glass rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-purple-400" id="productivity-score">0</div>
+                        <div class="text-xs text-gray-400">Score productivité</div>
+                    </div>
+                </div>
+                
+                <!-- Barre de progression globale -->
+                <div class="mt-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-400">Progression globale</span>
+                        <span class="text-gray-400" id="global-progress">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="progress-bar bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" 
+                             id="global-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <!-- Actions rapides -->
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <button onclick="exportToCalendar()" class="px-3 py-1 glass rounded-lg text-sm hover:bg-gray-600">
+                        📅 Export Calendar
+                    </button>
+                    <button onclick="showStats()" class="px-3 py-1 glass rounded-lg text-sm hover:bg-gray-600">
+                        📊 Statistiques
+                    </button>
+                    <button onclick="exportData()" class="px-3 py-1 glass rounded-lg text-sm hover:bg-gray-600">
+                        💾 Backup
+                    </button>
+                    <button onclick="showTemplates()" class="px-3 py-1 glass rounded-lg text-sm hover:bg-gray-600">
+                        📋 Templates
+                    </button>
+                    <button onclick="showShortcuts()" class="px-3 py-1 glass rounded-lg text-sm hover:bg-gray-600">
+                        ⌨️ Raccourcis
+                    </button>
                 </div>
             </div>
 
-            <!-- Colonnes Kanban -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="kanban-board">
+            <!-- Vue Kanban (par défaut) -->
+            <div id="kanban-view" class="grid grid-cols-12 gap-4">
                 <!-- Les colonnes seront générées par JavaScript -->
+            </div>
+            
+            <!-- Vue Timeline (cachée par défaut) -->
+            <div id="timeline-view" class="hidden glass rounded-2xl p-6">
+                <h2 class="text-2xl font-bold mb-4">Vue Chronologique 📅</h2>
+                <div id="timeline-content" class="space-y-4">
+                    <!-- Le contenu sera généré par JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Vue Statistiques (cachée) -->
+            <div id="stats-view" class="hidden glass rounded-2xl p-6">
+                <h2 class="text-2xl font-bold mb-4">Statistiques détaillées 📊</h2>
+                <div class="chart-container">
+                    <canvas id="productivityChart"></canvas>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-6">
+                    <div class="glass rounded-lg p-4">
+                        <h3 class="font-bold mb-2">Répartition par statut</h3>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="glass rounded-lg p-4">
+                        <h3 class="font-bold mb-2">Priorités</h3>
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Modal Nouveau Projet -->
-        <div id="addProjectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-                <h3 class="text-xl font-semibold mb-4">Nouveau projet</h3>
+        <!-- Modal Nouveau Projet amélioré -->
+        <div id="addProjectModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50">
+            <div class="glass rounded-2xl p-8 w-full max-w-md card-enter">
+                <h3 class="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Nouveau Projet ✨
+                </h3>
+                
+                <!-- Templates rapides -->
+                <div class="mb-4">
+                    <label class="text-sm text-gray-400 mb-2 block">Utiliser un template :</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="useTemplate('dev')" class="p-2 glass rounded text-xs hover:bg-gray-600">
+                            💻 Dev
+                        </button>
+                        <button onclick="useTemplate('business')" class="p-2 glass rounded text-xs hover:bg-gray-600">
+                            💼 Business
+                        </button>
+                        <button onclick="useTemplate('perso')" class="p-2 glass rounded text-xs hover:bg-gray-600">
+                            🏠 Perso
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-400 mb-1 block">Catégorie</label>
+                        <div class="flex gap-2 mb-3">
+                            <button onclick="selectEmoji('💰')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">💰</button>
+                            <button onclick="selectEmoji('🤖')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">🤖</button>
+                            <button onclick="selectEmoji('🏢')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">🏢</button>
+                            <button onclick="selectEmoji('🎯')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">🎯</button>
+                            <button onclick="selectEmoji('📱')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">📱</button>
+                            <button onclick="selectEmoji('🎨')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">🎨</button>
+                            <button onclick="selectEmoji('🚀')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">🚀</button>
+                            <button onclick="selectEmoji('💡')" class="emoji-btn p-2 glass rounded hover:bg-gray-600">💡</button>
+                        </div>
+                    </div>
+                    
                     <input type="text" id="newProjectTitle" placeholder="Nom du projet" 
-                           class="w-full p-2 bg-gray-700 rounded text-white">
+                           class="w-full p-3 bg-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    
                     <textarea id="newProjectDescription" placeholder="Description" 
-                              class="w-full p-2 bg-gray-700 rounded text-white h-24"></textarea>
-                    <select id="newProjectPriority" class="w-full p-2 bg-gray-700 rounded text-white">
-                        <option value="haute">Priorité haute</option>
-                        <option value="moyenne" selected>Priorité moyenne</option>
-                        <option value="basse">Priorité basse</option>
-                    </select>
-                    <div class="flex gap-2">
+                              class="w-full p-3 bg-gray-700 rounded-lg text-white h-24 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-400 mb-1 block">Priorité</label>
+                            <select id="newProjectPriority" class="w-full p-3 bg-gray-700 rounded-lg text-white">
+                                <option value="haute">🔥 Haute</option>
+                                <option value="moyenne" selected>⚡ Moyenne</option>
+                                <option value="basse">💤 Basse</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm text-gray-400 mb-1 block">Durée estimée</label>
+                            <input type="text" id="newProjectDuration" placeholder="Ex: 2 semaines" 
+                                   class="w-full p-3 bg-gray-700 rounded-lg text-white">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm text-gray-400 mb-1 block">Date limite (optionnel)</label>
+                        <input type="date" id="newProjectDeadline" 
+                               class="w-full p-3 bg-gray-700 rounded-lg text-white">
+                    </div>
+                    
+                    <div class="flex gap-3 mt-6">
                         <button onclick="addProject()" 
-                                class="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded transition-colors">
-                            Ajouter
+                                class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg font-semibold transform hover:scale-105">
+                            Créer le projet
                         </button>
                         <button onclick="closeAddModal()" 
-                                class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded transition-colors">
+                                class="flex-1 glass hover:bg-gray-600 py-3 rounded-lg">
                             Annuler
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Modal Templates -->
+        <div id="templatesModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50">
+            <div class="glass rounded-2xl p-8 w-full max-w-2xl card-enter max-h-[80vh] overflow-y-auto">
+                <h3 class="text-2xl font-bold mb-6">Templates de Projets 📋</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="glass rounded-lg p-4 hover:bg-gray-700 cursor-pointer" onclick="createFromTemplate('website')">
+                        <h4 class="font-bold mb-2">🌐 Site Web</h4>
+                        <p class="text-sm text-gray-400">Template pour création de site avec toutes les étapes</p>
+                    </div>
+                    <div class="glass rounded-lg p-4 hover:bg-gray-700 cursor-pointer" onclick="createFromTemplate('app')">
+                        <h4 class="font-bold mb-2">📱 Application Mobile</h4>
+                        <p class="text-sm text-gray-400">De l'idée au déploiement sur les stores</p>
+                    </div>
+                    <div class="glass rounded-lg p-4 hover:bg-gray-700 cursor-pointer" onclick="createFromTemplate('saas')">
+                        <h4 class="font-bold mb-2">💰 Projet SaaS</h4>
+                        <p class="text-sm text-gray-400">Business model, MVP, marketing...</p>
+                    </div>
+                    <div class="glass rounded-lg p-4 hover:bg-gray-700 cursor-pointer" onclick="createFromTemplate('course')">
+                        <h4 class="font-bold mb-2">🎓 Création de Cours</h4>
+                        <p class="text-sm text-gray-400">Planification complète d'un cours en ligne</p>
+                    </div>
+                </div>
+                <button onclick="closeTemplatesModal()" class="mt-6 w-full glass hover:bg-gray-600 py-3 rounded-lg">
+                    Fermer
+                </button>
+            </div>
+        </div>
+        
+        <!-- Modal Raccourcis -->
+        <div id="shortcutsModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm z-50">
+            <div class="glass rounded-2xl p-8 w-full max-w-md card-enter">
+                <h3 class="text-2xl font-bold mb-6">Raccourcis Clavier ⌨️</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>Nouveau projet</span>
+                        <kbd class="px-2 py-1 bg-gray-700 rounded">Ctrl + N</kbd>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Rechercher</span>
+                        <kbd class="px-2 py-1 bg-gray-700 rounded">Ctrl + F</kbd>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Mode Focus</span>
+                        <kbd class="px-2 py-1 bg-gray-700 rounded">F</kbd>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Changer la vue</span>
+                        <kbd class="px-2 py-1 bg-gray-700 rounded">V</kbd>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Export</span>
+                        <kbd class="px-2 py-1 bg-gray-700 rounded">Ctrl + E</kbd>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Thème</span>
+                        <kbd class="px-2 py-1 bg-gray-700 rounded">T</kbd>
+                    </div>
+                </div>
+                <button onclick="closeShortcutsModal()" class="mt-6 w-full glass hover:bg-gray-600 py-3 rounded-lg">
+                    Fermer
+                </button>
+            </div>
+        </div>
     </div>
+    
+    <!-- Sons -->
+    <audio id="moveSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURE" type="audio/wav">
+    </audio>
+    <audio id="completeSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRl4FAABXQVZFZm10IBAAAAABAAEAiBUAAIgVAAABAAgAZGF0YQoFAAAAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==" type="audio/wav">
+    </audio>
 
     <script>
-        // État global
+        // État global amélioré
         let projects = [];
         let draggedProject = null;
+        let selectedEmoji = '🎯';
+        let soundEnabled = true;
+        let currentTheme = 'dark';
+        let focusMode = false;
+        let currentView = 'kanban';
+        let productivityChart = null;
+        let statusChart = null;
+        let priorityChart = null;
+
+        // Citations motivantes
+        const quotes = [
+            "La meilleure façon de prédire l'avenir est de le créer.",
+            "Chaque expert a déjà été un débutant.",
+            "Le succès est la somme de petits efforts répétés jour après jour.",
+            "Votre seule limite est vous-même.",
+            "Les rêves ne fonctionnent que si vous travaillez."
+        ];
 
         // Configuration des colonnes
         const columns = [
-            { id: 'idees', title: 'Idées', color: 'bg-blue-500' },
-            { id: 'en-cours', title: 'En cours', color: 'bg-yellow-500' },
-            { id: 'en-pause', title: 'En pause', color: 'bg-gray-500' },
-            { id: 'termine', title: 'Terminé', color: 'bg-green-500' }
+            { id: 'idees', title: '💡 Idées', color: 'bg-blue-500', size: 'col-span-3' },
+            { id: 'en-cours', title: '🔥 En cours', color: 'bg-yellow-500', size: 'col-span-5' },
+            { id: 'en-pause', title: '⏸️ En pause', color: 'bg-gray-500', size: 'col-span-2' },
+            { id: 'termine', title: '✅ Terminé', color: 'bg-green-500', size: 'col-span-2' }
         ];
 
-        const priorityColors = {
-            haute: 'border-red-500',
-            moyenne: 'border-yellow-500',
-            basse: 'border-green-500'
+        const priorityGradients = {
+            haute: 'from-red-500 to-orange-500',
+            moyenne: 'from-yellow-500 to-amber-500',
+            basse: 'from-green-500 to-emerald-500'
         };
 
-        // Charger les projets depuis localStorage
+        // Templates de projets
+        const projectTemplates = {
+            website: {
+                title: 'Nouveau Site Web',
+                description: 'Création d\'un site web professionnel',
+                emoji: '🌐',
+                priority: 'haute',
+                duration: '4 semaines'
+            },
+            app: {
+                title: 'Application Mobile',
+                description: 'Développement d\'une app iOS/Android',
+                emoji: '📱',
+                priority: 'haute',
+                duration: '3 mois'
+            },
+            saas: {
+                title: 'Projet SaaS',
+                description: 'Lancement d\'un service en ligne',
+                emoji: '💰',
+                priority: 'haute',
+                duration: '6 mois'
+            },
+            course: {
+                title: 'Cours en ligne',
+                description: 'Création et lancement d\'une formation',
+                emoji: '🎓',
+                priority: 'moyenne',
+                duration: '2 mois'
+            },
+            dev: {
+                title: 'Projet Dev',
+                description: 'Développement logiciel',
+                emoji: '💻',
+                priority: 'moyenne',
+                duration: '1 mois'
+            },
+            business: {
+                title: 'Projet Business',
+                description: 'Initiative commerciale',
+                emoji: '💼',
+                priority: 'haute',
+                duration: '2 mois'
+            },
+            perso: {
+                title: 'Projet Personnel',
+                description: 'Objectif personnel',
+                emoji: '🏠',
+                priority: 'basse',
+                duration: '1 mois'
+            }
+        };
+
+        // Initialisation
+        function init() {
+            loadProjects();
+            renderBoard();
+            saveProjects();
+            updateGreeting();
+            setRandomQuote();
+            setupKeyboardShortcuts();
+            setInterval(updateGreeting, 60000); // Mise à jour toutes les minutes
+            
+            // Charger le thème sauvegardé
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'light') {
+                toggleTheme();
+            }
+            
+            // Charger l'état du son
+            soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+            updateSoundIcon();
+        }
+
+        // Charger les projets
         function loadProjects() {
-            const saved = localStorage.getItem('ia-projects');
+            const saved = localStorage.getItem('command-center-projects');
             if (saved) {
                 projects = JSON.parse(saved);
             } else {
-                // Projets par défaut
                 projects = [
-                    { id: 1, title: 'Gridbot', description: 'Bot de trading automatisé', status: 'en-cours', priority: 'haute', notes: '' },
-                    { id: 2, title: 'Création site internet', description: 'Portfolio personnel avec projets IA', status: 'en-cours', priority: 'moyenne', notes: '' },
-                    { id: 3, title: 'Projet revenus passifs', description: 'Automatisation et monétisation', status: 'idees', priority: 'moyenne', notes: '' }
+                    { 
+                        id: 1, 
+                        emoji: '🤖',
+                        title: 'Gridbot', 
+                        description: 'Bot de trading automatisé', 
+                        status: 'en-cours', 
+                        priority: 'haute', 
+                        notes: 'Phase 1 : capital 700€ / en-cours\nPhase 2 : capital 5000€',
+                        progress: 40,
+                        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        duration: '3 mois',
+                        deadline: null
+                    },
+                    { 
+                        id: 2, 
+                        emoji: '🏢',
+                        title: 'Automatisation Marseille Imprimerie', 
+                        description: 'Création cerveau IA et orchestrateur', 
+                        status: 'en-cours', 
+                        priority: 'moyenne', 
+                        notes: 'Phase 1 conception de la grille tarifaire pour l\'imprimerie',
+                        progress: 25,
+                        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+                        duration: '6 semaines',
+                        deadline: null
+                    },
+                    { 
+                        id: 3, 
+                        emoji: '💰',
+                        title: 'Projet revenus passifs', 
+                        description: 'Automatisation et monétisation', 
+                        status: 'idees', 
+                        priority: 'moyenne', 
+                        notes: '',
+                        progress: 0,
+                        createdAt: new Date().toISOString(),
+                        duration: '2 mois',
+                        deadline: null
+                    }
                 ];
             }
+            updateAllStats();
         }
 
         // Sauvegarder les projets
         function saveProjects() {
-            localStorage.setItem('ia-projects', JSON.stringify(projects));
+            localStorage.setItem('command-center-projects', JSON.stringify(projects));
             document.getElementById('lastSaved').textContent = `Sauvegarde auto : ${new Date().toLocaleTimeString()}`;
+            updateAllStats();
+        }
+
+        // Mettre à jour toutes les statistiques
+        function updateAllStats() {
+            updateGlobalProgress();
+            updateCompletedCount();
+            updateProductivityScore();
+            updateProjectCounts();
+        }
+
+        // Calculer le score de productivité
+        function updateProductivityScore() {
+            const completed = projects.filter(p => p.status === 'termine').length;
+            const inProgress = projects.filter(p => p.status === 'en-cours').length;
+            const totalProgress = projects.reduce((sum, p) => sum + (p.progress || 0), 0);
+            
+            let score = 0;
+            if (projects.length > 0) {
+                score = Math.round((completed * 100 + inProgress * 50 + totalProgress) / projects.length);
+            }
+            
+            document.getElementById('productivity-score').textContent = score;
+        }
+
+        // Compter les projets par statut
+        function updateProjectCounts() {
+            document.getElementById('total-projects').textContent = projects.length;
+            document.getElementById('active-projects').textContent = projects.filter(p => p.status === 'en-cours').length;
+        }
+
+        // Calculer la progression globale
+        function updateGlobalProgress() {
+            const totalProgress = projects.reduce((sum, p) => sum + (p.progress || 0), 0);
+            const avgProgress = projects.length > 0 ? Math.round(totalProgress / projects.length) : 0;
+            document.getElementById('global-progress').textContent = `${avgProgress}%`;
+            document.getElementById('global-progress-bar').style.width = `${avgProgress}%`;
+        }
+
+        // Compter les projets terminés
+        function updateCompletedCount() {
+            const completed = projects.filter(p => p.status === 'termine').length;
+            document.getElementById('completed-count').textContent = completed;
+        }
+
+        // Salutations selon l'heure
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = '';
+            
+            if (hour < 6) greeting = 'Bonne nuit';
+            else if (hour < 12) greeting = 'Bonjour';
+            else if (hour < 18) greeting = 'Bon après-midi';
+            else greeting = 'Bonsoir';
+            
+            document.getElementById('greeting').textContent = greeting;
+        }
+
+        // Citation aléatoire
+        function setRandomQuote() {
+            const quote = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('motivational-quote').textContent = quote;
+        }
+
+        // Calculer les jours depuis la création
+        function daysSince(dateString) {
+            const created = new Date(dateString);
+            const now = new Date();
+            const days = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+            return days === 0 ? "Aujourd'hui" : `Il y a ${days} jour${days > 1 ? 's' : ''}`;
         }
 
         // Rendre le tableau Kanban
         function renderBoard() {
-            const board = document.getElementById('kanban-board');
-            board.innerHTML = columns.map(column => `
-                <div class="bg-gray-800 rounded-lg p-4" 
-                     ondrop="drop(event, '${column.id}')" 
-                     ondragover="allowDrop(event)"
-                     ondragleave="dragLeave(event)">
-                    <div class="flex items-center mb-4">
-                        <div class="w-3 h-3 rounded-full ${column.color} mr-2"></div>
-                        <h2 class="text-lg font-semibold">${column.title}</h2>
-                        <span class="ml-auto text-sm text-gray-500">
-                            ${projects.filter(p => p.status === column.id).length}
-                        </span>
+            if (currentView === 'kanban') {
+                const board = document.getElementById('kanban-view');
+                board.innerHTML = columns.map(column => `
+                    <div class="${column.size} ${focusMode && column.id !== 'en-cours' ? 'blur-effect' : ''}">
+                        <div class="glass rounded-2xl p-4 h-full ${column.id === 'termine' ? 'border-2 border-green-500/20' : ''}" 
+                             ondrop="drop(event, '${column.id}')" 
+                             ondragover="allowDrop(event)"
+                             ondragleave="dragLeave(event)">
+                            <div class="flex items-center mb-4">
+                                <h2 class="text-lg font-bold">${column.title}</h2>
+                                <span class="ml-auto text-sm text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
+                                    ${projects.filter(p => p.status === column.id).length}
+                                </span>
+                            </div>
+                            <div class="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto custom-scroll" id="column-${column.id}">
+                                ${renderProjectCards(column.id)}
+                            </div>
+                            ${column.id === 'idees' ? `
+                                <button onclick="openAddModal()" 
+                                        class="mt-4 w-full py-3 border-2 border-dashed border-gray-600 rounded-xl 
+                                               hover:border-blue-500 hover:bg-gray-700/50 transition-all flex items-center 
+                                               justify-center text-gray-400 hover:text-white group">
+                                    <svg class="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Nouveau projet
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
-                    <div class="space-y-3" id="column-${column.id}">
-                        ${renderProjectCards(column.id)}
-                    </div>
-                    ${column.id === 'idees' ? `
-                        <button onclick="openAddModal()" 
-                                class="mt-3 w-full py-2 border border-dashed border-gray-600 rounded-lg 
-                                       hover:border-gray-500 hover:bg-gray-700 transition-all flex items-center 
-                                       justify-center text-gray-400 hover:text-white">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            Nouveau projet
-                        </button>
-                    ` : ''}
-                </div>
-            `).join('');
+                `).join('');
+            }
         }
 
         // Rendre les cartes de projet
         function renderProjectCards(status) {
             return projects
-                .filter(p => p.status === status)
-                .map(project => `
-                    <div id="project-${project.id}" 
-                         class="bg-gray-700 p-3 rounded-lg cursor-move border-l-4 ${priorityColors[project.priority]} 
-                                hover:bg-gray-600 transition-colors"
-                         draggable="true" 
-                         ondragstart="drag(event, ${project.id})">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="font-semibold">${project.title}</h3>
-                            <div class="flex gap-1">
-                                <button onclick="editProject(${project.id})" 
-                                        class="text-gray-400 hover:text-white">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
+                .filter(p => p.status === status && (!window.currentSearchTerm || 
+                    p.title.toLowerCase().includes(window.currentSearchTerm.toLowerCase()) ||
+                    p.description.toLowerCase().includes(window.currentSearchTerm.toLowerCase())))
+                .map(project => {
+                    const deadlineInfo = project.deadline ? 
+                        `<div class="text-xs text-red-400 mt-1">⏰ ${new Date(project.deadline).toLocaleDateString()}</div>` : '';
+                    
+                    return `
+                        <div id="project-${project.id}" 
+                             class="glass rounded-xl p-4 cursor-move transform hover:scale-105 hover:-rotate-1 card-enter
+                                    ${project.status === 'termine' ? 'celebrate' : ''}"
+                             draggable="true" 
+                             ondragstart="drag(event, ${project.id})">
+                            
+                            <!-- En-tête avec emoji -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl">${project.emoji || '🎯'}</span>
+                                    <h3 class="font-bold text-lg">${project.title}</h3>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button onclick="editProject(${project.id})" 
+                                            class="text-gray-400 hover:text-white p-1 hover:bg-gray-600 rounded">
+                                        ✏️
+                                    </button>
+                                    <button onclick="deleteProject(${project.id})" 
+                                            class="text-gray-400 hover:text-red-400 p-1 hover:bg-gray-600 rounded">
+                                        ❌
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Description -->
+                            <p class="text-sm text-gray-300 mb-3">${project.description}</p>
+                            
+                            <!-- Barre de progression -->
+                            <div class="mb-3">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-400">Progression</span>
+                                    <span class="text-gray-400">${project.progress || 0}%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="progress-bar bg-gradient-to-r ${priorityGradients[project.priority]} h-2 rounded-full" 
+                                         style="width: ${project.progress || 0}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Notes -->
+                            <div class="mb-3">
+                                <button onclick="toggleNotes(${project.id})" 
+                                        class="flex items-center text-xs text-gray-400 hover:text-gray-200">
+                                    📝 Notes & détails
                                 </button>
-                                <button onclick="deleteProject(${project.id})" 
-                                        class="text-gray-400 hover:text-red-400">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                              d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
+                                <div id="notes-${project.id}" class="hidden mt-2">
+                                    <textarea class="w-full bg-gray-700/50 p-2 rounded-lg text-xs border border-gray-600" 
+                                              placeholder="Ajoutez des notes..." 
+                                              rows="3"
+                                              onclick="event.stopPropagation()"
+                                              onblur="updateNotes(${project.id}, this.value)">${project.notes || ''}</textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Métadonnées -->
+                            <div class="flex items-center justify-between text-xs text-gray-400">
+                                <span class="flex items-center gap-1">
+                                    <span class="${project.priority === 'haute' ? 'text-red-400' : project.priority === 'moyenne' ? 'text-yellow-400' : 'text-green-400'}">
+                                        ${project.priority === 'haute' ? '🔥' : project.priority === 'moyenne' ? '⚡' : '💤'}
+                                    </span>
+                                    ${project.priority}
+                                </span>
+                                <span>📅 ${daysSince(project.createdAt)}</span>
+                            </div>
+                            ${project.duration ? `<div class="text-xs text-gray-500 mt-1">⏱️ ${project.duration}</div>` : ''}
+                            ${deadlineInfo}
+                            
+                            <!-- Boutons progression rapide -->
+                            <div class="mt-3 flex gap-2">
+                                <button onclick="updateProgress(${project.id}, -10)" 
+                                        class="flex-1 text-xs bg-gray-700 hover:bg-gray-600 py-1 rounded">
+                                    -10%
+                                </button>
+                                <button onclick="updateProgress(${project.id}, 10)" 
+                                        class="flex-1 text-xs bg-gray-700 hover:bg-gray-600 py-1 rounded">
+                                    +10%
+                                </button>
+                                <button onclick="startPomodoro(${project.id})" 
+                                        class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded"
+                                        title="Pomodoro 25min">
+                                    🍅
                                 </button>
                             </div>
                         </div>
-                        <p class="text-sm text-gray-400 mb-2">${project.description}</p>
-                        
-                        <div class="mb-2">
-                            <button onclick="toggleNotes(${project.id})" 
-                                    class="flex items-center text-xs text-gray-500 hover:text-gray-300">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                Notes & détails
-                            </button>
-                            <div id="notes-${project.id}" class="hidden mt-2">
-                                <textarea class="w-full bg-gray-600 p-2 rounded text-xs" 
-                                          placeholder="Ajoutez des notes, idées, liens, todo..." 
-                                          rows="4"
-                                          onclick="event.stopPropagation()"
-                                          onblur="updateNotes(${project.id}, this.value)">${project.notes || ''}</textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center text-xs text-gray-500">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                            </svg>
-                            <span>Priorité ${project.priority}</span>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
         }
 
         // Drag and Drop
@@ -222,16 +837,59 @@
             event.currentTarget.classList.remove('drag-over');
             
             if (draggedProject) {
+                const oldStatus = draggedProject.status;
                 draggedProject.status = status;
+                
+                // Jouer un son
+                if (soundEnabled) {
+                    document.getElementById('moveSound').play();
+                }
+                
+                // Célébrer si on passe en terminé
+                if (status === 'termine' && oldStatus !== 'termine') {
+                    draggedProject.progress = 100;
+                    celebrate();
+                    
+                    if (soundEnabled) {
+                        document.getElementById('completeSound').play();
+                    }
+                }
+                
                 saveProjects();
                 renderBoard();
             }
         }
 
+        // Fonction de célébration
+        function celebrate() {
+            // Créer des confettis
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = ['#f0f', '#0ff', '#ff0', '#0f0', '#00f', '#f00'][Math.floor(Math.random() * 6)];
+                    confetti.style.width = Math.random() * 10 + 5 + 'px';
+                    confetti.style.height = confetti.style.width;
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
         // Gestion des projets
+        function selectEmoji(emoji) {
+            selectedEmoji = emoji;
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.classList.toggle('ring-2', btn.textContent === emoji);
+                btn.classList.toggle('ring-blue-500', btn.textContent === emoji);
+            });
+        }
+
         function openAddModal() {
             document.getElementById('addProjectModal').classList.remove('hidden');
             document.getElementById('newProjectTitle').focus();
+            selectEmoji('🎯');
         }
 
         function closeAddModal() {
@@ -239,27 +897,39 @@
             document.getElementById('newProjectTitle').value = '';
             document.getElementById('newProjectDescription').value = '';
             document.getElementById('newProjectPriority').value = 'moyenne';
+            document.getElementById('newProjectDuration').value = '';
+            document.getElementById('newProjectDeadline').value = '';
         }
 
         function addProject() {
             const title = document.getElementById('newProjectTitle').value;
             const description = document.getElementById('newProjectDescription').value;
             const priority = document.getElementById('newProjectPriority').value;
+            const duration = document.getElementById('newProjectDuration').value;
+            const deadline = document.getElementById('newProjectDeadline').value;
             
             if (title) {
                 const newProject = {
                     id: Date.now(),
+                    emoji: selectedEmoji,
                     title,
                     description,
                     priority,
+                    duration,
+                    deadline: deadline || null,
                     status: 'idees',
                     notes: '',
+                    progress: 0,
                     createdAt: new Date().toISOString()
                 };
                 projects.push(newProject);
                 saveProjects();
                 renderBoard();
                 closeAddModal();
+                
+                if (soundEnabled) {
+                    document.getElementById('moveSound').play();
+                }
             }
         }
 
@@ -274,7 +944,7 @@
         function editProject(id) {
             const project = projects.find(p => p.id === id);
             const newTitle = prompt('Titre du projet:', project.title);
-            if (newTitle !== null) {
+            if (newTitle !== null && newTitle !== '') {
                 project.title = newTitle;
                 const newDescription = prompt('Description:', project.description);
                 if (newDescription !== null) {
@@ -296,11 +966,200 @@
             saveProjects();
         }
 
-        // Export des données
+        function updateProgress(id, delta) {
+            const project = projects.find(p => p.id === id);
+            project.progress = Math.max(0, Math.min(100, (project.progress || 0) + delta));
+            saveProjects();
+            renderBoard();
+        }
+
+        // Pomodoro Timer
+        function startPomodoro(projectId) {
+            alert('Pomodoro de 25 minutes démarré ! 🍅\nConcentrez-vous sur votre projet.');
+            // Ici on pourrait implémenter un vrai timer
+        }
+
+        // Recherche
+        function searchProjects(term) {
+            window.currentSearchTerm = term;
+            renderBoard();
+        }
+
+        // Thème
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.getElementById('theme-icon').textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+            localStorage.setItem('theme', currentTheme);
+            
+            // Ajuster les couleurs de base
+            if (currentTheme === 'light') {
+                document.body.style.background = 'rgb(249, 250, 251)';
+                document.body.style.color = 'rgb(17, 24, 39)';
+            } else {
+                document.body.style.background = 'rgb(17, 24, 39)';
+                document.body.style.color = 'rgb(255, 255, 255)';
+            }
+        }
+
+        // Son
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            updateSoundIcon();
+            localStorage.setItem('soundEnabled', soundEnabled);
+        }
+
+        function updateSoundIcon() {
+            document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+
+        // Mode Focus
+        function toggleFocusMode() {
+            focusMode = !focusMode;
+            renderBoard();
+            
+            if (focusMode) {
+                alert('Mode Focus activé ! 🎯\nConcentrez-vous sur vos projets en cours.');
+            }
+        }
+
+        // Changer de vue
+        function toggleView() {
+            if (currentView === 'kanban') {
+                currentView = 'timeline';
+                showTimelineView();
+            } else {
+                currentView = 'kanban';
+                showKanbanView();
+            }
+        }
+
+        function showKanbanView() {
+            document.getElementById('kanban-view').classList.remove('hidden');
+            document.getElementById('timeline-view').classList.add('hidden');
+            document.getElementById('stats-view').classList.add('hidden');
+        }
+
+        function showTimelineView() {
+            document.getElementById('kanban-view').classList.add('hidden');
+            document.getElementById('timeline-view').classList.remove('hidden');
+            document.getElementById('stats-view').classList.add('hidden');
+            renderTimeline();
+        }
+
+        function renderTimeline() {
+            const timelineContent = document.getElementById('timeline-content');
+            const sortedProjects = [...projects].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            timelineContent.innerHTML = sortedProjects.map(project => `
+                <div class="timeline-item glass rounded-lg p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">${project.emoji}</span>
+                        <h3 class="font-bold text-lg">${project.title}</h3>
+                        <span class="text-sm px-2 py-1 rounded-full bg-gray-700">
+                            ${columns.find(c => c.id === project.status).title}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-400 mb-2">${project.description}</p>
+                    <div class="flex items-center gap-4 text-xs text-gray-500">
+                        <span>📅 Créé ${daysSince(project.createdAt)}</span>
+                        <span>📊 ${project.progress}%</span>
+                        ${project.deadline ? `<span class="text-red-400">⏰ ${new Date(project.deadline).toLocaleDateString()}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Statistiques
+        function showStats() {
+            document.getElementById('kanban-view').classList.add('hidden');
+            document.getElementById('timeline-view').classList.add('hidden');
+            document.getElementById('stats-view').classList.remove('hidden');
+            renderCharts();
+        }
+
+        function renderCharts() {
+            // Graphique de productivité
+            const ctx1 = document.getElementById('productivityChart').getContext('2d');
+            if (productivityChart) productivityChart.destroy();
+            
+            productivityChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                    datasets: [{
+                        label: 'Progression',
+                        data: [65, 72, 78, 82, 85, 88, 92],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+            
+            // Graphique par statut
+            const ctx2 = document.getElementById('statusChart').getContext('2d');
+            if (statusChart) statusChart.destroy();
+            
+            const statusCounts = columns.map(col => projects.filter(p => p.status === col.id).length);
+            
+            statusChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: columns.map(c => c.title),
+                    datasets: [{
+                        data: statusCounts,
+                        backgroundColor: ['#3b82f6', '#eab308', '#6b7280', '#22c55e']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Graphique par priorité
+            const ctx3 = document.getElementById('priorityChart').getContext('2d');
+            if (priorityChart) priorityChart.destroy();
+            
+            const priorityCounts = {
+                haute: projects.filter(p => p.priority === 'haute').length,
+                moyenne: projects.filter(p => p.priority === 'moyenne').length,
+                basse: projects.filter(p => p.priority === 'basse').length
+            };
+            
+            priorityChart = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: ['Haute', 'Moyenne', 'Basse'],
+                    datasets: [{
+                        label: 'Projets',
+                        data: Object.values(priorityCounts),
+                        backgroundColor: ['#ef4444', '#eab308', '#22c55e']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Export
         function exportData() {
             const dataStr = JSON.stringify(projects, null, 2);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            const exportFileDefaultName = `projets-ia-${new Date().toISOString().split('T')[0]}.json`;
+            const exportFileDefaultName = `projets-${new Date().toISOString().split('T')[0]}.json`;
             
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
@@ -308,10 +1167,149 @@
             linkElement.click();
         }
 
-        // Initialisation
-        loadProjects();
-        renderBoard();
-        saveProjects();
+        // Export vers calendrier
+        function exportToCalendar() {
+            let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Centre de Commande//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+
+            projects.forEach(project => {
+                if (project.deadline) {
+                    const deadline = new Date(project.deadline);
+                    const dtstart = deadline.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                    
+                    icsContent += `BEGIN:VEVENT
+UID:${project.id}@command-center
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}
+DTSTART:${dtstart}
+SUMMARY:${project.emoji} ${project.title}
+DESCRIPTION:${project.description}\\n\\nPriorité: ${project.priority}\\nProgression: ${project.progress}%
+STATUS:CONFIRMED
+END:VEVENT
+`;
+                }
+            });
+
+            icsContent += 'END:VCALENDAR';
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `projets-${new Date().toISOString().split('T')[0]}.ics`;
+            link.click();
+        }
+
+        // Templates
+        function showTemplates() {
+            document.getElementById('templatesModal').classList.remove('hidden');
+        }
+
+        function closeTemplatesModal() {
+            document.getElementById('templatesModal').classList.add('hidden');
+        }
+
+        function useTemplate(templateKey) {
+            const template = projectTemplates[templateKey];
+            if (template) {
+                document.getElementById('newProjectTitle').value = template.title;
+                document.getElementById('newProjectDescription').value = template.description;
+                document.getElementById('newProjectPriority').value = template.priority;
+                document.getElementById('newProjectDuration').value = template.duration;
+                selectEmoji(template.emoji);
+            }
+        }
+
+        function createFromTemplate(templateKey) {
+            const template = projectTemplates[templateKey];
+            if (template) {
+                const newProject = {
+                    id: Date.now(),
+                    emoji: template.emoji,
+                    title: template.title,
+                    description: template.description,
+                    priority: template.priority,
+                    duration: template.duration,
+                    deadline: null,
+                    status: 'idees',
+                    notes: '',
+                    progress: 0,
+                    createdAt: new Date().toISOString()
+                };
+                projects.push(newProject);
+                saveProjects();
+                renderBoard();
+                closeTemplatesModal();
+                
+                if (soundEnabled) {
+                    document.getElementById('moveSound').play();
+                }
+            }
+        }
+
+        // Raccourcis clavier
+        function showShortcuts() {
+            document.getElementById('shortcutsModal').classList.remove('hidden');
+        }
+
+        function closeShortcutsModal() {
+            document.getElementById('shortcutsModal').classList.add('hidden');
+        }
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl + N : Nouveau projet
+                if (e.ctrlKey && e.key === 'n') {
+                    e.preventDefault();
+                    openAddModal();
+                }
+                
+                // Ctrl + F : Recherche
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    document.getElementById('searchInput').focus();
+                }
+                
+                // F : Mode Focus
+                if (e.key === 'f' && !e.ctrlKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    toggleFocusMode();
+                }
+                
+                // V : Changer la vue
+                if (e.key === 'v' && !e.ctrlKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    toggleView();
+                }
+                
+                // Ctrl + E : Export
+                if (e.ctrlKey && e.key === 'e') {
+                    e.preventDefault();
+                    exportData();
+                }
+                
+                // T : Thème
+                if (e.key === 't' && !e.ctrlKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    toggleTheme();
+                }
+                
+                // Echap : Fermer les modals
+                if (e.key === 'Escape') {
+                    closeAddModal();
+                    closeTemplatesModal();
+                    closeShortcutsModal();
+                    if (currentView !== 'kanban') {
+                        showKanbanView();
+                    }
+                }
+            });
+        }
+
+        // Initialisation au chargement
+        init();
+        
+        // Sauvegarde automatique toutes les 30 secondes
+        setInterval(saveProjects, 30000);
     </script>
 </body>
 </html>
