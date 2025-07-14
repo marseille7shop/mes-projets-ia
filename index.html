@@ -1,4 +1,27 @@
-<!DOCTYPE html>
+.text-gray-500 {
+            color: #6b7280;
+        }
+        
+        .text-gray-600 {
+            color: #4b5563;
+        }                            // Vérifier aussi toutes les clés localStorage qui commencent par "projects-"
+                            for (let key in localStorage) {
+                                if (key.startsWith('projects-')) {
+                                    const tabId = key.replace('projects-', '');
+                                    if (!spaces[tabId]) {
+                                        const projects = JSON.parse(localStorage.getItem(key));
+                                        if (projects && projects.length > 0) {
+                                            spaces[tabId] = {
+                                                id: tabId,
+                                                name: tabId.charAt(0).toUpperCase() + tabId.slice(1),
+                                                emoji: '📁',
+                                                projects: projects
+                                            };
+                                            console.log(`Données récupérées depuis ${key}`);
+                                        }
+                                    }
+                                }
+                            }<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -246,6 +269,10 @@
             transition: width 0.3s;
         }
         
+        .progress-fill.bg-red-500 {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+        
         /* Tags */
         .card-tags {
             display: flex;
@@ -342,6 +369,11 @@
         
         .btn-primary:hover {
             background: rgb(37, 99, 235);
+        }
+        
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 12px;
         }
         
         /* Modal moderne */
@@ -476,6 +508,144 @@
             animation: slideIn 0.3s ease-out;
         }
         
+        /* Étapes du projet */
+        .steps-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 8px;
+        }
+        
+        .steps-header {
+            color: #888;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .steps-list {
+            margin-top: 6px;
+        }
+        
+        .step-item {
+            padding: 3px 0;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .step-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin: 0 -6px;
+        }
+        
+        /* Sélecteur de statut d'étape */
+        .step-status-selector {
+            display: flex;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            padding: 2px;
+        }
+        
+        .step-status-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+            opacity: 0.3;
+        }
+        
+        .step-status-btn:hover {
+            opacity: 0.7;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .step-status-btn.active {
+            opacity: 1;
+            background: rgba(var(--accent), 0.2);
+        }
+        
+        /* Statut "en cours" avec animation */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .step-status-btn.active:has-text('🔄') {
+            animation: rotate 2s linear infinite;
+        }
+        
+        .step-item span {
+            flex: 1;
+            line-height: 1.3;
+        }
+        
+        .step-item .action-btn {
+            width: 18px;
+            height: 18px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .step-item:hover .action-btn {
+            opacity: 0.5;
+        }
+        
+        .step-item .action-btn:hover {
+            opacity: 1 !important;
+        }
+        
+        .steps-modal-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .steps-modal-item select {
+            min-width: 120px;
+        }
+        
+        .steps-modal-item input {
+            flex: 1;
+        }
+        
+        /* Couleurs pour les différents statuts */
+        .text-yellow-400 {
+            color: #fbbf24;
+        }
+        
+        .text-gray-400 {
+            color: #9ca3af;
+        }
+        
+        .text-gray-500 {
+            color: #6b7280;
+        }
+        
+        .text-gray-600 {
+            color: #4b5563;
+        }
+        
+        .font-medium {
+            font-weight: 500;
+        }
+        
         /* Responsive */
         @media (max-width: 1024px) {
             .hide-mobile {
@@ -490,6 +660,12 @@
 </head>
 <body>
     <div class="h-screen flex flex-col">
+        <!-- Message de récupération de données -->
+        <div id="dataRecoveryMessage" class="hidden bg-green-600 text-white px-6 py-3 text-center">
+            <span id="recoveryText"></span>
+            <button onclick="this.parentElement.classList.add('hidden')" class="ml-4 text-white/70 hover:text-white">✕</button>
+        </div>
+        
         <!-- Header optimisé -->
         <header class="glass border-b border-gray-800 px-6 py-3">
             <div class="flex items-center justify-between">
@@ -579,7 +755,7 @@
                     <div class="column h-full">
                         <div class="column-header">
                             <div class="flex items-center gap-2">
-                                <span>✅</span>
+                                <span>✅ Terminé</span>
                                 <span class="text-sm text-gray-500" id="count-termine">0</span>
                             </div>
                         </div>
@@ -644,7 +820,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Deadline</label>
+                        <label class="form-label">Deadline <span class="text-gray-500 text-xs">(définit la progression automatique)</span></label>
                         <input type="date" id="projectDeadline" class="form-input">
                     </div>
                 </div>
@@ -655,8 +831,13 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Notes</label>
-                    <textarea id="projectNotes" class="form-textarea" rows="3"></textarea>
+                    <label class="form-label">Étapes du projet</label>
+                    <div id="stepsContainer" class="space-y-2 mb-2">
+                        <!-- Les étapes seront ajoutées ici dynamiquement -->
+                    </div>
+                    <button type="button" onclick="addStepToModal()" class="btn btn-sm">
+                        + Ajouter une étape
+                    </button>
                 </div>
                 
                 <div class="flex gap-3 mt-6">
@@ -710,6 +891,28 @@
         // Initialisation
         function init() {
             loadData();
+            
+            // Afficher un message si des données ont été récupérées
+            let projectCount = 0;
+            let spaceCount = Object.keys(spaces).length;
+            Object.values(spaces).forEach(space => {
+                projectCount += space.projects ? space.projects.length : 0;
+            });
+            
+            if (projectCount > 0) {
+                console.log(`✅ ${projectCount} projets récupérés avec succès !`);
+                // Afficher le message de récupération
+                const messageEl = document.getElementById('dataRecoveryMessage');
+                const textEl = document.getElementById('recoveryText');
+                textEl.textContent = `✅ Données récupérées avec succès : ${projectCount} projet(s) dans ${spaceCount} espace(s)`;
+                messageEl.classList.remove('hidden');
+                
+                // Masquer le message après 10 secondes
+                setTimeout(() => {
+                    messageEl.classList.add('hidden');
+                }, 10000);
+            }
+            
             if (Object.keys(spaces).length === 0) {
                 // Créer un espace par défaut
                 spaces = {
@@ -725,6 +928,7 @@
             } else {
                 currentSpace = Object.keys(spaces)[0];
             }
+            
             renderTabs();
             renderProjects();
             updateStats();
@@ -742,7 +946,7 @@
             });
         }
         
-        // Chargement des données
+        // Chargement des données avec récupération
         function loadData() {
             try {
                 // Charger les espaces
@@ -750,10 +954,13 @@
                 if (saved) {
                     spaces = JSON.parse(saved);
                 } else {
-                    // Migration depuis l'ancienne version
-                    const oldData = localStorage.getItem('command-center-tabs');
-                    if (oldData) {
-                        const tabs = JSON.parse(oldData);
+                    // Tentative de récupération des données
+                    console.log('Récupération des données en cours...');
+                    
+                    // 1. Essayer l'ancienne version avec onglets
+                    const oldTabs = localStorage.getItem('command-center-tabs');
+                    if (oldTabs) {
+                        const tabs = JSON.parse(oldTabs);
                         spaces = {};
                         tabs.forEach(tab => {
                             const projects = localStorage.getItem(`projects-${tab.id}`);
@@ -764,8 +971,91 @@
                                 projects: projects ? JSON.parse(projects) : []
                             };
                         });
+                        console.log('Données récupérées depuis command-center-tabs');
+                    } else {
+                        // 2. Essayer l'ancienne version simple
+                        const oldProjects = localStorage.getItem('command-center-projects');
+                        if (oldProjects) {
+                            spaces = {
+                                'default': {
+                                    id: 'default',
+                                    name: 'Mes Projets',
+                                    emoji: '🏠',
+                                    projects: JSON.parse(oldProjects)
+                                }
+                            };
+                            console.log('Données récupérées depuis command-center-projects');
+                        } else {
+                            // 3. Essayer project-spaces
+                            const projectSpaces = localStorage.getItem('project-spaces');
+                            if (projectSpaces) {
+                                const oldSpaces = JSON.parse(projectSpaces);
+                                spaces = {};
+                                Object.entries(oldSpaces).forEach(([key, space]) => {
+                                    spaces[key] = {
+                                        id: key,
+                                        name: space.name || key,
+                                        emoji: space.emoji || '🏠',
+                                        projects: space.projects || []
+                                    };
+                                });
+                                console.log('Données récupérées depuis project-spaces');
+                            }
+                            
+                            // Vérifier aussi toutes les clés localStorage qui commencent par "projects-"
+                            for (let key in localStorage) {
+                                if (key.startsWith('projects-')) {
+                                    const tabId = key.replace('projects-', '');
+                                    if (!spaces[tabId]) {
+                                        const projects = JSON.parse(localStorage.getItem(key));
+                                        if (projects && projects.length > 0) {
+                                            spaces[tabId] = {
+                                                id: tabId,
+                                                name: tabId.charAt(0).toUpperCase() + tabId.slice(1),
+                                                emoji: '📁',
+                                                projects: projects
+                                            };
+                                            console.log(`Données récupérées depuis ${key}`);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+                
+                // Migrer les projets pour ajouter les étapes si nécessaire
+                Object.values(spaces).forEach(space => {
+                    space.projects = space.projects.map(project => {
+                        if (!project.steps) {
+                            // Convertir les notes existantes en étapes si possible
+                            project.steps = [];
+                            if (project.notes) {
+                                const lines = project.notes.split('\n').filter(line => line.trim());
+                                lines.forEach((line, index) => {
+                                    project.steps.push({
+                                        id: Date.now() + index,
+                                        text: line,
+                                        status: 'todo'
+                                    });
+                                });
+                            }
+                        } else {
+                            // Migrer l'ancien format "completed" vers "status"
+                            project.steps = project.steps.map(step => {
+                                if (step.completed !== undefined && step.status === undefined) {
+                                    return {
+                                        ...step,
+                                        status: step.completed ? 'done' : 'todo'
+                                    };
+                                }
+                                return step;
+                            });
+                        }
+                        return project;
+                    });
+                });
+                
             } catch (error) {
                 console.error('Erreur de chargement:', error);
                 spaces = {};
@@ -869,6 +1159,23 @@
             const priorityClass = `priority-${project.priority}`;
             const isOverdue = project.deadline && new Date(project.deadline) < new Date() && !isCompleted;
             
+            // Calculer la progression automatiquement basée sur la deadline
+            let progress = 0;
+            if (project.deadline && project.created) {
+                const startDate = new Date(project.created);
+                const endDate = new Date(project.deadline);
+                const now = new Date();
+                
+                const totalTime = endDate - startDate;
+                const elapsedTime = now - startDate;
+                
+                if (totalTime > 0) {
+                    progress = Math.round((elapsedTime / totalTime) * 100);
+                    // Limiter entre 0 et 100%
+                    progress = Math.max(0, Math.min(100, progress));
+                }
+            }
+            
             if (isCompleted) {
                 // Version compacte pour terminés
                 return `
@@ -914,15 +1221,20 @@
                         </div>
                     </div>
                     
-                    ${project.status === 'en-cours' && project.progress !== undefined ? `
+                    ${project.status === 'en-cours' && project.deadline ? `
                         <div class="progress-container">
                             <div class="progress-header">
-                                <span>Progression</span>
-                                <span>${project.progress}%</span>
+                                <span>Temps écoulé</span>
+                                <span class="${progress > 100 ? 'text-red-400' : ''}">${progress}%</span>
                             </div>
                             <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                                <div class="progress-fill ${progress > 100 ? 'bg-red-500' : ''}" style="width: ${Math.min(progress, 100)}%"></div>
                             </div>
+                            ${progress > 100 ? '<div class="text-xs text-red-400 mt-1">⚠️ Deadline dépassée</div>' : ''}
+                        </div>
+                    ` : project.status === 'en-cours' && !project.deadline ? `
+                        <div class="text-xs text-gray-500 mt-2">
+                            💡 Définissez une deadline pour voir la progression
                         </div>
                     ` : ''}
                     
@@ -932,34 +1244,68 @@
                         </div>
                     ` : ''}
                     
+                    
+                    <!-- Étapes du projet -->
+                    ${project.steps && project.steps.length > 0 ? `
+                        <div class="steps-container mt-3">
+                            <div class="steps-header flex items-center justify-between mb-2">
+                                <span class="text-xs text-gray-500" title="⭕ À faire | 🔄 En cours | ✅ Terminé">
+                                    Étapes 
+                                    <span class="text-gray-600">(${project.steps.filter(s => s.status === 'done').length}/${project.steps.length})</span>
+                                </span>
+                                <button class="action-btn text-xs" onclick="addStep(${project.id})" title="Ajouter une étape">
+                                    +
+                                </button>
+                            </div>
+                            <div class="steps-list space-y-1" style="max-height: 150px; overflow-y: auto;">
+                                ${project.steps.map((step, index) => `
+                                    <div class="step-item flex items-center gap-2 text-sm ${step.status === 'done' ? 'opacity-60' : ''}">
+                                        <div class="step-status-selector">
+                                            <button class="step-status-btn ${step.status === 'todo' ? 'active' : ''}" 
+                                                    onclick="updateStepStatus(${project.id}, ${step.id}, 'todo')" 
+                                                    title="À faire">
+                                                ⭕
+                                            </button>
+                                            <button class="step-status-btn ${step.status === 'doing' ? 'active' : ''}" 
+                                                    onclick="updateStepStatus(${project.id}, ${step.id}, 'doing')" 
+                                                    title="En cours">
+                                                🔄
+                                            </button>
+                                            <button class="step-status-btn ${step.status === 'done' ? 'active' : ''}" 
+                                                    onclick="updateStepStatus(${project.id}, ${step.id}, 'done')" 
+                                                    title="Terminé">
+                                                ✅
+                                            </button>
+                                        </div>
+                                        <span class="${step.status === 'done' ? 'line-through' : ''} ${step.status === 'doing' ? 'text-yellow-400' : ''}">${step.text}</span>
+                                        <button class="action-btn text-xs ml-auto opacity-0 hover:opacity-100" 
+                                                onclick="deleteStep(${project.id}, ${step.id})" 
+                                                title="Supprimer">
+                                            ×
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : project.status === 'en-cours' ? `
+                        <div class="mt-3">
+                            <button class="btn btn-sm w-full" onclick="addStep(${project.id})">
+                                + Ajouter des étapes
+                            </button>
+                        </div>
+                    ` : ''}
+                    
                     <div class="card-meta">
                         ${project.deadline ? `
-                            <div class="meta-item ${isOverdue ? 'text-red-400' : ''}">
+                            <div class="meta-item ${isOverdue ? 'text-red-400 font-medium' : ''} ${project.status === 'en-cours' ? 'text-sm' : ''}">
                                 📅 ${formatDate(project.deadline)}
+                                ${project.status === 'en-cours' ? `<span class="${isOverdue ? 'text-red-400' : 'text-gray-500'}">(${daysUntil(project.deadline)})</span>` : ''}
                             </div>
                         ` : ''}
                         <div class="meta-item">
-                            ⏱️ ${daysSince(project.created)}
+                            ⏱️ Créé ${daysSince(project.created)}
                         </div>
-                        ${project.notes ? `
-                            <div class="meta-item cursor-pointer" onclick="toggleNotes(${project.id})">
-                                📝 Notes
-                            </div>
-                        ` : ''}
                     </div>
-                    
-                    ${project.notes ? `
-                        <div id="notes-${project.id}" class="card-notes">
-                            ${project.notes.replace(/\n/g, '<br>')}
-                        </div>
-                    ` : ''}
-                    
-                    ${project.status === 'en-cours' ? `
-                        <div class="flex gap-2 mt-3">
-                            <button class="btn btn-sm" onclick="updateProgress(${project.id}, -10)">-10%</button>
-                            <button class="btn btn-sm" onclick="updateProgress(${project.id}, 10)">+10%</button>
-                        </div>
-                    ` : ''}
                 </div>
             `;
         }
@@ -976,8 +1322,10 @@
                 document.getElementById('projectPriority').value = project.priority;
                 document.getElementById('projectDeadline').value = project.deadline || '';
                 document.getElementById('projectTags').value = project.tags ? project.tags.join(', ') : '';
-                document.getElementById('projectNotes').value = project.notes || '';
                 selectEmoji(project.emoji || '🎯');
+                
+                // Afficher les étapes existantes
+                renderStepsInModal(project.steps || []);
             } else {
                 document.getElementById('modal-title').textContent = 'Nouveau projet';
                 document.getElementById('projectId').value = '';
@@ -986,8 +1334,10 @@
                 document.getElementById('projectPriority').value = 'normal';
                 document.getElementById('projectDeadline').value = '';
                 document.getElementById('projectTags').value = '';
-                document.getElementById('projectNotes').value = '';
                 selectEmoji('🎯');
+                
+                // Réinitialiser les étapes
+                renderStepsInModal([]);
             }
             
             document.getElementById('projectStatus').value = status;
@@ -1013,6 +1363,21 @@
             
             if (!title) return;
             
+            // Récupérer les étapes depuis le modal
+            const steps = [];
+            const stepElements = document.querySelectorAll('#stepsContainer .steps-modal-item');
+            stepElements.forEach(element => {
+                const input = element.querySelector('input');
+                const select = element.querySelector('select');
+                if (input && input.value.trim()) {
+                    steps.push({
+                        id: input.dataset.stepId ? parseInt(input.dataset.stepId) : Date.now() + Math.random(),
+                        text: input.value.trim(),
+                        status: select ? select.value : 'todo'
+                    });
+                }
+            });
+            
             if (id) {
                 // Modifier
                 const project = space.projects.find(p => p.id == id);
@@ -1023,7 +1388,7 @@
                     project.priority = document.getElementById('projectPriority').value;
                     project.deadline = document.getElementById('projectDeadline').value;
                     project.tags = tags;
-                    project.notes = document.getElementById('projectNotes').value.trim();
+                    project.steps = steps;
                 }
             } else {
                 // Créer
@@ -1036,8 +1401,7 @@
                     priority: document.getElementById('projectPriority').value,
                     deadline: document.getElementById('projectDeadline').value,
                     tags: tags,
-                    notes: document.getElementById('projectNotes').value.trim(),
-                    progress: 0,
+                    steps: steps,
                     created: new Date().toISOString()
                 };
                 space.projects.push(project);
@@ -1069,23 +1433,93 @@
             }
         }
         
-        // Mettre à jour la progression
-        function updateProgress(id, delta) {
+        // Gestion des étapes
+        function renderStepsInModal(steps) {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = steps.map((step, index) => `
+                <div class="steps-modal-item">
+                    <select class="form-select mr-2" data-step-id="${step.id}" data-step-status="${step.status || 'todo'}" style="width: auto;">
+                        <option value="todo" ${step.status === 'todo' || !step.status ? 'selected' : ''}>⭕ À faire</option>
+                        <option value="doing" ${step.status === 'doing' ? 'selected' : ''}>🔄 En cours</option>
+                        <option value="done" ${step.status === 'done' ? 'selected' : ''}>✅ Terminé</option>
+                    </select>
+                    <input type="text" 
+                           value="${step.text}" 
+                           data-step-id="${step.id}"
+                           class="form-input" 
+                           placeholder="Étape ${index + 1}">
+                    <button type="button" onclick="this.parentElement.remove()" class="action-btn">×</button>
+                </div>
+            `).join('');
+        }
+        
+        function addStepToModal() {
+            const container = document.getElementById('stepsContainer');
+            const newStep = document.createElement('div');
+            newStep.className = 'steps-modal-item';
+            newStep.innerHTML = `
+                <select class="form-select mr-2" style="width: auto;">
+                    <option value="todo" selected>⭕ À faire</option>
+                    <option value="doing">🔄 En cours</option>
+                    <option value="done">✅ Terminé</option>
+                </select>
+                <input type="text" 
+                       class="form-input" 
+                       placeholder="Nouvelle étape">
+                <button type="button" onclick="this.parentElement.remove()" class="action-btn">×</button>
+            `;
+            container.appendChild(newStep);
+            newStep.querySelector('input').focus();
+        }
+        
+        function addStep(projectId) {
             const space = spaces[currentSpace];
-            const project = space.projects.find(p => p.id === id);
+            const project = space.projects.find(p => p.id === projectId);
+            
             if (project) {
-                project.progress = Math.max(0, Math.min(100, (project.progress || 0) + delta));
-                saveData();
-                renderProjects();
+                const stepText = prompt('Nouvelle étape :');
+                if (stepText && stepText.trim()) {
+                    if (!project.steps) project.steps = [];
+                    project.steps.push({
+                        id: Date.now(),
+                        text: stepText.trim(),
+                        status: 'todo' // todo, doing, done
+                    });
+                    saveData();
+                    renderProjects();
+                }
             }
         }
         
-        // Toggle notes
-        function toggleNotes(id) {
-            const notesEl = document.getElementById(`notes-${id}`);
-            if (notesEl) {
-                notesEl.classList.toggle('show');
+        function updateStepStatus(projectId, stepId, newStatus) {
+            const space = spaces[currentSpace];
+            const project = space.projects.find(p => p.id === projectId);
+            
+            if (project && project.steps) {
+                const step = project.steps.find(s => s.id === stepId);
+                if (step) {
+                    step.status = newStatus;
+                    saveData();
+                    renderProjects();
+                    updateStats();
+                }
             }
+        }
+        
+        function deleteStep(projectId, stepId) {
+            const space = spaces[currentSpace];
+            const project = space.projects.find(p => p.id === projectId);
+            
+            if (project && project.steps) {
+                project.steps = project.steps.filter(s => s.id !== stepId);
+                saveData();
+                renderProjects();
+                updateStats();
+            }
+        }
+        // Mettre à jour la progression (calculée automatiquement selon la deadline)
+        function updateProgress(id, delta) {
+            console.log('La progression est maintenant calculée automatiquement selon la date d\'échéance');
         }
         
         // Drag & Drop
@@ -1112,9 +1546,11 @@
             if (draggedProject) {
                 draggedProject.status = newStatus;
                 
-                // Si terminé, mettre progression à 100%
-                if (newStatus === 'termine') {
-                    draggedProject.progress = 100;
+                // Si terminé, marquer toutes les étapes comme complétées
+                if (newStatus === 'termine' && draggedProject.steps) {
+                    draggedProject.steps.forEach(step => {
+                        step.status = 'done';
+                    });
                 }
                 
                 saveData();
@@ -1244,6 +1680,19 @@
             if (days < 7) return `${days}j`;
             if (days < 30) return `${Math.floor(days / 7)}sem`;
             return formatDate(dateStr);
+        }
+        
+        function daysUntil(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const days = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+            
+            if (days === 0) return "Aujourd'hui";
+            if (days === 1) return "Demain";
+            if (days < 0) return `${Math.abs(days)}j de retard`;
+            if (days < 7) return `${days}j restants`;
+            if (days < 30) return `${Math.floor(days / 7)} sem`;
+            return '';
         }
         
         // Initialisation
