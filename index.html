@@ -3,51 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord - Gestion de Projets</title>
+    <title>Centre de Commande - Gestion Multi-Projets</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --bg-primary: 15, 15, 15;
+            --bg-secondary: 25, 25, 25;
+            --text-primary: 255, 255, 255;
+            --accent: 59, 130, 246;
+        }
+        
         * {
             box-sizing: border-box;
         }
         
         body {
+            background: rgb(var(--bg-primary));
+            color: rgb(var(--text-primary));
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #e0e0e0;
             margin: 0;
-            padding: 0;
-            overflow-x: hidden;
+            overflow: hidden;
         }
         
-        /* Scrollbar minimal */
+        /* Scrollbar élégante */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
         }
         
         ::-webkit-scrollbar-track {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
+            border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.2);
         }
         
-        /* Onglets minimalistes */
+        /* Glass effect */
+        .glass {
+            background: rgba(var(--bg-secondary), 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Tabs avec edit */
         .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             padding: 8px 16px;
-            border-radius: 8px 8px 0 0;
+            border-radius: 8px;
             background: rgba(255, 255, 255, 0.05);
-            border: none;
             color: #999;
             cursor: pointer;
             transition: all 0.2s;
             font-size: 14px;
+            border: 1px solid transparent;
         }
         
         .tab:hover {
@@ -56,15 +73,28 @@
         }
         
         .tab.active {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(var(--accent), 0.15);
+            border-color: rgba(var(--accent), 0.3);
             color: #fff;
-            font-weight: 500;
         }
         
-        /* Colonnes */
+        .tab-name {
+            flex: 1;
+        }
+        
+        .tab-actions {
+            display: none;
+            gap: 4px;
+        }
+        
+        .tab:hover .tab-actions {
+            display: flex;
+        }
+        
+        /* Colonnes optimisées */
         .column {
             background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             height: 100%;
             display: flex;
@@ -73,61 +103,41 @@
         }
         
         .column-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            font-weight: 600;
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            font-weight: 600;
         }
         
         .column-content {
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 12px;
         }
         
-        /* Cartes simplifiées */
-        .card {
+        /* Cartes de projet complètes */
+        .project-card {
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 14px;
             margin-bottom: 8px;
             cursor: grab;
             transition: all 0.2s;
             position: relative;
         }
         
-        .card:hover {
+        .project-card:hover {
             background: rgba(255, 255, 255, 0.08);
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
-        .card:active {
-            cursor: grabbing;
-        }
-        
-        .card.dragging {
+        .project-card.dragging {
             opacity: 0.5;
-            transform: rotate(2deg);
-        }
-        
-        .card-title {
-            font-weight: 500;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .card-meta {
-            font-size: 12px;
-            color: #888;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            cursor: grabbing;
         }
         
         /* Priorités */
@@ -136,47 +146,57 @@
         }
         
         .priority-normal {
-            border-left: 3px solid #f59e0b;
+            border-left: 3px solid #eab308;
         }
         
         .priority-low {
             border-left: 3px solid #10b981;
         }
         
-        /* Boutons minimalistes */
-        .btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 14px;
+        /* Header de carte */
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
         }
         
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.15);
+        .card-emoji {
+            font-size: 20px;
+            line-height: 1;
         }
         
-        .btn-primary {
-            background: #3b82f6;
+        .card-content {
+            flex: 1;
         }
         
-        .btn-primary:hover {
-            background: #2563eb;
+        .card-title {
+            font-weight: 500;
+            font-size: 15px;
+            margin-bottom: 4px;
+            line-height: 1.4;
         }
         
-        /* Actions rapides (cachées par défaut) */
+        .card-description {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        /* Actions de carte */
         .card-actions {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 10px;
+            right: 10px;
             display: none;
             gap: 4px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 4px;
+            border-radius: 6px;
         }
         
-        .card:hover .card-actions {
+        .project-card:hover .card-actions {
             display: flex;
         }
         
@@ -184,46 +204,147 @@
             width: 28px;
             height: 28px;
             border-radius: 4px;
-            background: rgba(0, 0, 0, 0.5);
+            background: transparent;
             border: none;
-            color: #fff;
+            color: #999;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            font-size: 14px;
         }
         
         .action-btn:hover {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
         }
         
-        /* Progress bar ultra simple */
-        .progress {
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            margin-top: 8px;
-            overflow: hidden;
+        /* Progress bar moderne */
+        .progress-container {
+            margin: 8px 0;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 4px;
         }
         
         .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
             height: 100%;
-            background: #3b82f6;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             transition: width 0.3s;
         }
         
-        /* Zone de drop */
-        .drop-zone {
-            border: 2px dashed rgba(59, 130, 246, 0.5);
-            background: rgba(59, 130, 246, 0.1);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            color: #3b82f6;
+        /* Tags */
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
         }
         
-        /* Modal simple */
+        .tag {
+            background: rgba(var(--accent), 0.15);
+            color: rgb(var(--accent));
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        /* Metadata */
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* Notes expandables */
+        .card-notes {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+            display: none;
+        }
+        
+        .card-notes.show {
+            display: block;
+        }
+        
+        /* Cartes terminées (compactes) */
+        .completed-card {
+            padding: 10px 12px;
+            opacity: 0.6;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .completed-card .card-header {
+            margin-bottom: 0;
+        }
+        
+        .completed-card .card-title {
+            text-decoration: line-through;
+            font-size: 13px;
+        }
+        
+        .completed-card .card-description,
+        .completed-card .progress-container,
+        .completed-card .card-tags,
+        .completed-card .card-meta {
+            display: none;
+        }
+        
+        /* Boutons modernes */
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary {
+            background: rgb(var(--accent));
+            border-color: rgb(var(--accent));
+        }
+        
+        .btn-primary:hover {
+            background: rgb(37, 99, 235);
+        }
+        
+        /* Modal moderne */
         .modal {
             display: none;
             position: fixed;
@@ -233,6 +354,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            backdrop-filter: blur(4px);
         }
         
         .modal.show {
@@ -240,142 +362,196 @@
         }
         
         .modal-content {
-            background: #1a1a1a;
+            background: rgb(var(--bg-secondary));
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 24px;
-            max-width: 400px;
+            max-width: 500px;
             width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
+        /* Form moderne */
         .form-group {
             margin-bottom: 16px;
         }
         
         .form-label {
             display: block;
-            margin-bottom: 4px;
-            font-size: 14px;
+            margin-bottom: 6px;
+            font-size: 13px;
             color: #999;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            color: #fff;
-            font-size: 14px;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            background: rgba(255, 255, 255, 0.08);
-        }
-        
-        /* Badge simple */
-        .badge {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
             font-weight: 500;
         }
         
-        /* Cartes terminées (plus compactes) */
-        .completed-card {
-            padding: 8px 12px;
-            opacity: 0.6;
-        }
-        
-        .completed-card .card-title {
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
             font-size: 14px;
-            text-decoration: line-through;
+            transition: all 0.2s;
         }
         
-        .completed-card .card-meta,
-        .completed-card .progress {
-            display: none;
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: rgb(var(--accent));
+            background: rgba(255, 255, 255, 0.08);
         }
         
-        /* Stats minimalistes */
-        .stats-bar {
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        /* Stats bar */
+        .stats-container {
             display: flex;
             gap: 24px;
-            padding: 12px 0;
-            font-size: 14px;
-            color: #888;
+            align-items: center;
         }
         
         .stat-item {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 14px;
+        }
+        
+        .stat-label {
+            color: #666;
         }
         
         .stat-value {
             color: #fff;
-            font-weight: 500;
+            font-weight: 600;
+        }
+        
+        /* Quick add button */
+        .quick-add {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(var(--accent), 0.15);
+            border: 1px solid rgba(var(--accent), 0.3);
+            color: rgb(var(--accent));
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .quick-add:hover {
+            background: rgba(var(--accent), 0.25);
+            transform: scale(1.05);
+        }
+        
+        /* Zone de drop active */
+        .drop-active {
+            background: rgba(var(--accent), 0.05);
+            border-color: rgba(var(--accent), 0.3);
+        }
+        
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card-enter {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hide-mobile {
+                display: none;
+            }
+            
+            .stats-container {
+                gap: 16px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="app" class="h-screen flex flex-col">
-        <!-- Header ultra minimal -->
-        <header class="border-b border-gray-800 px-6 py-3">
+    <div class="h-screen flex flex-col">
+        <!-- Header optimisé -->
+        <header class="glass border-b border-gray-800 px-6 py-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-6">
-                    <h1 class="text-xl font-semibold">Projets</h1>
-                    <div class="stats-bar">
+                    <h1 class="text-xl font-semibold">Centre de Commande</h1>
+                    <div class="stats-container hide-mobile">
                         <div class="stat-item">
-                            <span>Total:</span>
+                            <span class="stat-label">Total:</span>
                             <span class="stat-value" id="stat-total">0</span>
                         </div>
                         <div class="stat-item">
-                            <span>En cours:</span>
+                            <span class="stat-label">En cours:</span>
                             <span class="stat-value" id="stat-active">0</span>
                         </div>
                         <div class="stat-item">
-                            <span>Cette semaine:</span>
-                            <span class="stat-value" id="stat-week">0</span>
+                            <span class="stat-label">Terminés:</span>
+                            <span class="stat-value" id="stat-done">0</span>
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <input type="text" placeholder="Rechercher..." 
+                    <input type="text" 
                            id="searchInput"
-                           onkeyup="filterProjects(this.value)"
-                           class="form-input w-48">
-                    <button class="btn" onclick="exportData()">Export</button>
+                           placeholder="Rechercher..." 
+                           onkeyup="searchProjects(this.value)"
+                           class="form-input w-48 py-2">
+                    <button class="btn" onclick="exportData()">
+                        <span>💾 Export</span>
+                    </button>
                 </div>
             </div>
         </header>
 
-        <!-- Onglets -->
+        <!-- Onglets éditables -->
         <nav class="border-b border-gray-800 px-6">
-            <div class="flex items-center gap-2 overflow-x-auto" id="tabs">
+            <div class="flex items-center gap-2 py-2 overflow-x-auto" id="tabs-container">
                 <!-- Généré dynamiquement -->
             </div>
         </nav>
 
-        <!-- Contenu principal -->
+        <!-- Board principal -->
         <main class="flex-1 overflow-hidden p-6">
-            <div class="h-full grid grid-cols-12 gap-4" id="board">
-                <!-- Colonne Idées (30%) -->
+            <div class="h-full grid grid-cols-12 gap-4">
+                <!-- Colonne Idées (33%) -->
                 <div class="col-span-4">
                     <div class="column h-full">
                         <div class="column-header">
-                            <span>💡 Idées</span>
-                            <button class="action-btn" onclick="quickAddProject('idees')">
+                            <div class="flex items-center gap-2">
+                                <span>💡 Idées</span>
+                                <span class="text-sm text-gray-500" id="count-idees">0</span>
+                            </div>
+                            <button class="quick-add" onclick="openProjectModal('idees')" title="Nouveau projet">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                 </svg>
                             </button>
                         </div>
-                        <div class="column-content" id="col-idees" ondrop="handleDrop(event, 'idees')" ondragover="handleDragOver(event)">
-                            <!-- Projets -->
+                        <div class="column-content" 
+                             id="col-idees" 
+                             ondrop="handleDrop(event, 'idees')" 
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)">
                         </div>
                     </div>
                 </div>
@@ -384,24 +560,34 @@
                 <div class="col-span-6">
                     <div class="column h-full">
                         <div class="column-header">
-                            <span>🔥 En cours</span>
-                            <span class="badge" id="active-count">0</span>
+                            <div class="flex items-center gap-2">
+                                <span>🔥 En cours</span>
+                                <span class="text-sm text-gray-500" id="count-en-cours">0</span>
+                            </div>
                         </div>
-                        <div class="column-content" id="col-en-cours" ondrop="handleDrop(event, 'en-cours')" ondragover="handleDragOver(event)">
-                            <!-- Projets -->
+                        <div class="column-content" 
+                             id="col-en-cours" 
+                             ondrop="handleDrop(event, 'en-cours')" 
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)">
                         </div>
                     </div>
                 </div>
 
-                <!-- Colonne Terminé (20%) -->
+                <!-- Colonne Terminé (17%) -->
                 <div class="col-span-2">
                     <div class="column h-full">
                         <div class="column-header">
-                            <span>✅</span>
-                            <span class="badge" id="done-count">0</span>
+                            <div class="flex items-center gap-2">
+                                <span>✅</span>
+                                <span class="text-sm text-gray-500" id="count-termine">0</span>
+                            </div>
                         </div>
-                        <div class="column-content" id="col-termine" ondrop="handleDrop(event, 'termine')" ondragover="handleDragOver(event)">
-                            <!-- Projets -->
+                        <div class="column-content" 
+                             id="col-termine" 
+                             ondrop="handleDrop(event, 'termine')" 
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)">
                         </div>
                     </div>
                 </div>
@@ -409,42 +595,136 @@
         </main>
     </div>
 
-    <!-- Modal simple -->
-    <div id="projectModal" class="modal" onclick="if(event.target === this) closeModal()">
+    <!-- Modal Projet -->
+    <div id="projectModal" class="modal" onclick="if(event.target === this) closeProjectModal()">
         <div class="modal-content">
             <form onsubmit="saveProject(event)">
-                <h3 class="text-lg font-semibold mb-4">Nouveau projet</h3>
+                <h3 class="text-lg font-semibold mb-4">
+                    <span id="modal-title">Nouveau projet</span>
+                </h3>
                 
+                <input type="hidden" id="projectId">
+                <input type="hidden" id="projectStatus">
+                
+                <!-- Emoji selector -->
                 <div class="form-group">
-                    <input type="text" id="projectTitle" class="form-input" placeholder="Titre du projet" required>
+                    <label class="form-label">Catégorie</label>
+                    <div class="flex gap-2 flex-wrap">
+                        <button type="button" onclick="selectEmoji('💼')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">💼</button>
+                        <button type="button" onclick="selectEmoji('💰')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">💰</button>
+                        <button type="button" onclick="selectEmoji('🤖')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🤖</button>
+                        <button type="button" onclick="selectEmoji('🎯')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🎯</button>
+                        <button type="button" onclick="selectEmoji('📱')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">📱</button>
+                        <button type="button" onclick="selectEmoji('🚀')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🚀</button>
+                        <button type="button" onclick="selectEmoji('💡')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">💡</button>
+                        <button type="button" onclick="selectEmoji('🎨')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🎨</button>
+                        <button type="button" onclick="selectEmoji('📊')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">📊</button>
+                        <button type="button" onclick="selectEmoji('🛠️')" class="emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🛠️</button>
+                    </div>
                 </div>
                 
                 <div class="form-group">
-                    <select id="projectPriority" class="form-input">
-                        <option value="normal">Priorité normale</option>
-                        <option value="high">Priorité haute</option>
-                        <option value="low">Priorité basse</option>
-                    </select>
+                    <label class="form-label">Titre du projet</label>
+                    <input type="text" id="projectTitle" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="projectDescription" class="form-textarea"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Priorité</label>
+                        <select id="projectPriority" class="form-select">
+                            <option value="high">🔥 Haute</option>
+                            <option value="normal" selected>⚡ Normale</option>
+                            <option value="low">💤 Basse</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Deadline</label>
+                        <input type="date" id="projectDeadline" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tags (séparés par des virgules)</label>
+                    <input type="text" id="projectTags" class="form-input" placeholder="Ex: design, urgent, v2">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea id="projectNotes" class="form-textarea" rows="3"></textarea>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="btn btn-primary flex-1">Sauvegarder</button>
+                    <button type="button" onclick="closeProjectModal()" class="btn flex-1">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Nouvel Espace -->
+    <div id="spaceModal" class="modal" onclick="if(event.target === this) closeSpaceModal()">
+        <div class="modal-content" style="max-width: 400px;">
+            <form onsubmit="saveSpace(event)">
+                <h3 class="text-lg font-semibold mb-4">Nouvel espace</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Nom de l'espace</label>
+                    <input type="text" id="spaceName" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Icône</label>
+                    <div class="flex gap-2 flex-wrap">
+                        <button type="button" onclick="selectSpaceEmoji('🏠')" class="space-emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🏠</button>
+                        <button type="button" onclick="selectSpaceEmoji('🏢')" class="space-emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🏢</button>
+                        <button type="button" onclick="selectSpaceEmoji('💼')" class="space-emoji-btn text-2xl p-2 rounded hover:bg-gray-700">💼</button>
+                        <button type="button" onclick="selectSpaceEmoji('🚀')" class="space-emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🚀</button>
+                        <button type="button" onclick="selectSpaceEmoji('🎯')" class="space-emoji-btn text-2xl p-2 rounded hover:bg-gray-700">🎯</button>
+                        <button type="button" onclick="selectSpaceEmoji('💡')" class="space-emoji-btn text-2xl p-2 rounded hover:bg-gray-700">💡</button>
+                    </div>
                 </div>
                 
                 <div class="flex gap-3 mt-6">
                     <button type="submit" class="btn btn-primary flex-1">Créer</button>
-                    <button type="button" onclick="closeModal()" class="btn flex-1">Annuler</button>
+                    <button type="button" onclick="closeSpaceModal()" class="btn flex-1">Annuler</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // État global simplifié
+        // État global
         let spaces = {};
-        let currentSpace = 'main';
-        let draggedItem = null;
-        let projectIdCounter = 1;
-
+        let currentSpace = '';
+        let draggedProject = null;
+        let selectedEmoji = '🎯';
+        let selectedSpaceEmoji = '🏢';
+        let editingProject = null;
+        
         // Initialisation
         function init() {
             loadData();
+            if (Object.keys(spaces).length === 0) {
+                // Créer un espace par défaut
+                spaces = {
+                    'default': {
+                        id: 'default',
+                        name: 'Mon Espace',
+                        emoji: '🏠',
+                        projects: []
+                    }
+                };
+                currentSpace = 'default';
+                saveData();
+            } else {
+                currentSpace = Object.keys(spaces)[0];
+            }
             renderTabs();
             renderProjects();
             updateStats();
@@ -453,68 +733,75 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'n' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
-                    quickAddProject('idees');
+                    openProjectModal('idees');
                 }
                 if (e.key === 'Escape') {
-                    closeModal();
+                    closeProjectModal();
+                    closeSpaceModal();
                 }
             });
         }
-
+        
         // Chargement des données
         function loadData() {
-            const saved = localStorage.getItem('project-spaces');
-            if (saved) {
-                spaces = JSON.parse(saved);
-            } else {
-                // Espaces par défaut
-                spaces = {
-                    main: {
-                        name: 'Personnel',
-                        projects: []
-                    },
-                    work: {
-                        name: 'Travail',
-                        projects: []
+            try {
+                // Charger les espaces
+                const saved = localStorage.getItem('project-spaces-v2');
+                if (saved) {
+                    spaces = JSON.parse(saved);
+                } else {
+                    // Migration depuis l'ancienne version
+                    const oldData = localStorage.getItem('command-center-tabs');
+                    if (oldData) {
+                        const tabs = JSON.parse(oldData);
+                        spaces = {};
+                        tabs.forEach(tab => {
+                            const projects = localStorage.getItem(`projects-${tab.id}`);
+                            spaces[tab.id] = {
+                                id: tab.id,
+                                name: tab.name,
+                                emoji: tab.emoji,
+                                projects: projects ? JSON.parse(projects) : []
+                            };
+                        });
                     }
-                };
-                
-                // Migration des anciens projets
-                const oldProjects = localStorage.getItem('command-center-projects');
-                if (oldProjects) {
-                    const parsed = JSON.parse(oldProjects);
-                    spaces.main.projects = parsed.map(p => ({
-                        id: p.id || projectIdCounter++,
-                        title: p.title,
-                        status: p.status || 'idees',
-                        priority: p.priority || 'normal',
-                        progress: p.progress || 0,
-                        created: p.createdAt || new Date().toISOString()
-                    }));
-                    localStorage.removeItem('command-center-projects');
                 }
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+                spaces = {};
             }
-            saveData();
         }
-
+        
         // Sauvegarde
         function saveData() {
-            localStorage.setItem('project-spaces', JSON.stringify(spaces));
+            localStorage.setItem('project-spaces-v2', JSON.stringify(spaces));
         }
-
+        
         // Rendu des onglets
         function renderTabs() {
-            const container = document.getElementById('tabs');
-            container.innerHTML = Object.entries(spaces).map(([key, space]) => `
-                <button class="tab ${currentSpace === key ? 'active' : ''}" 
-                        onclick="switchSpace('${key}')">
-                    ${space.name}
-                </button>
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = Object.values(spaces).map(space => `
+                <div class="tab ${currentSpace === space.id ? 'active' : ''}" id="tab-${space.id}">
+                    <span class="tab-emoji">${space.emoji}</span>
+                    <span class="tab-name" onclick="switchSpace('${space.id}')">${space.name}</span>
+                    <div class="tab-actions">
+                        <button class="action-btn" onclick="event.stopPropagation(); editSpaceName('${space.id}')" title="Renommer">
+                            ✏️
+                        </button>
+                        ${Object.keys(spaces).length > 1 ? `
+                            <button class="action-btn" onclick="event.stopPropagation(); deleteSpace('${space.id}')" title="Supprimer">
+                                ❌
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
             `).join('') + `
-                <button class="tab" onclick="createSpace()">+</button>
+                <button class="tab" onclick="openSpaceModal()">
+                    <span>+ Nouvel espace</span>
+                </button>
             `;
         }
-
+        
         // Changement d'espace
         function switchSpace(spaceId) {
             currentSpace = spaceId;
@@ -522,56 +809,91 @@
             renderProjects();
             updateStats();
         }
-
+        
+        // Renommer un espace
+        function editSpaceName(spaceId) {
+            const space = spaces[spaceId];
+            const newName = prompt('Nouveau nom pour cet espace:', space.name);
+            if (newName && newName.trim()) {
+                space.name = newName.trim();
+                saveData();
+                renderTabs();
+            }
+        }
+        
+        // Supprimer un espace
+        function deleteSpace(spaceId) {
+            if (confirm('Supprimer cet espace et tous ses projets ?')) {
+                delete spaces[spaceId];
+                if (currentSpace === spaceId) {
+                    currentSpace = Object.keys(spaces)[0];
+                }
+                saveData();
+                renderTabs();
+                renderProjects();
+                updateStats();
+            }
+        }
+        
         // Rendu des projets
         function renderProjects() {
             const space = spaces[currentSpace];
             if (!space) return;
-
+            
             // Réinitialiser les colonnes
             ['idees', 'en-cours', 'termine'].forEach(status => {
                 const col = document.getElementById(`col-${status}`);
                 col.innerHTML = '';
             });
-
-            // Afficher les projets
+            
+            // Compter et afficher les projets
+            const counts = { 'idees': 0, 'en-cours': 0, 'termine': 0 };
+            
             space.projects.forEach(project => {
                 const col = document.getElementById(`col-${project.status}`);
                 if (col) {
                     col.innerHTML += createProjectCard(project);
+                    counts[project.status]++;
                 }
             });
-
-            // Compter les projets actifs et terminés
-            const activeCount = space.projects.filter(p => p.status === 'en-cours').length;
-            const doneCount = space.projects.filter(p => p.status === 'termine').length;
             
-            document.getElementById('active-count').textContent = activeCount;
-            document.getElementById('done-count').textContent = doneCount;
+            // Mettre à jour les compteurs
+            Object.keys(counts).forEach(status => {
+                document.getElementById(`count-${status}`).textContent = counts[status];
+            });
         }
-
+        
         // Créer une carte projet
         function createProjectCard(project) {
             const isCompleted = project.status === 'termine';
             const priorityClass = `priority-${project.priority}`;
+            const isOverdue = project.deadline && new Date(project.deadline) < new Date() && !isCompleted;
             
             if (isCompleted) {
-                // Version compacte pour les terminés
+                // Version compacte pour terminés
                 return `
-                    <div class="card completed-card ${priorityClass}" 
+                    <div class="project-card completed-card ${priorityClass} card-enter" 
                          draggable="true" 
                          ondragstart="handleDragStart(event, ${project.id})"
                          data-id="${project.id}">
-                        <div class="card-title">
-                            ${project.title}
+                        <div class="card-actions">
+                            <button class="action-btn" onclick="deleteProject(${project.id})" title="Supprimer">
+                                🗑️
+                            </button>
+                        </div>
+                        <div class="card-header">
+                            <span class="card-emoji">${project.emoji || '✅'}</span>
+                            <div class="card-content">
+                                <div class="card-title">${project.title}</div>
+                            </div>
                         </div>
                     </div>
                 `;
             }
             
-            // Version normale pour idées et en cours
+            // Version complète pour idées et en cours
             return `
-                <div class="card ${priorityClass}" 
+                <div class="project-card ${priorityClass} card-enter" 
                      draggable="true" 
                      ondragstart="handleDragStart(event, ${project.id})"
                      data-id="${project.id}">
@@ -583,43 +905,160 @@
                             🗑️
                         </button>
                     </div>
-                    <div class="card-title">
-                        ${project.title}
+                    
+                    <div class="card-header">
+                        <span class="card-emoji">${project.emoji || '🎯'}</span>
+                        <div class="card-content">
+                            <div class="card-title">${project.title}</div>
+                            ${project.description ? `<div class="card-description">${project.description}</div>` : ''}
+                        </div>
                     </div>
+                    
+                    ${project.status === 'en-cours' && project.progress !== undefined ? `
+                        <div class="progress-container">
+                            <div class="progress-header">
+                                <span>Progression</span>
+                                <span>${project.progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${project.tags && project.tags.length > 0 ? `
+                        <div class="card-tags">
+                            ${project.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                    
                     <div class="card-meta">
-                        <span>${formatDate(project.created)}</span>
-                        ${project.status === 'en-cours' ? `<span>${project.progress}%</span>` : ''}
+                        ${project.deadline ? `
+                            <div class="meta-item ${isOverdue ? 'text-red-400' : ''}">
+                                📅 ${formatDate(project.deadline)}
+                            </div>
+                        ` : ''}
+                        <div class="meta-item">
+                            ⏱️ ${daysSince(project.created)}
+                        </div>
+                        ${project.notes ? `
+                            <div class="meta-item cursor-pointer" onclick="toggleNotes(${project.id})">
+                                📝 Notes
+                            </div>
+                        ` : ''}
                     </div>
+                    
+                    ${project.notes ? `
+                        <div id="notes-${project.id}" class="card-notes">
+                            ${project.notes.replace(/\n/g, '<br>')}
+                        </div>
+                    ` : ''}
+                    
                     ${project.status === 'en-cours' ? `
-                        <div class="progress">
-                            <div class="progress-bar" style="width: ${project.progress}%"></div>
+                        <div class="flex gap-2 mt-3">
+                            <button class="btn btn-sm" onclick="updateProgress(${project.id}, -10)">-10%</button>
+                            <button class="btn btn-sm" onclick="updateProgress(${project.id}, 10)">+10%</button>
                         </div>
                     ` : ''}
                 </div>
             `;
         }
-
-        // Ajout rapide
-        function quickAddProject(status = 'idees') {
-            const title = prompt('Nom du projet :');
-            if (title && title.trim()) {
+        
+        // Modal projet
+        function openProjectModal(status = 'idees', project = null) {
+            editingProject = project;
+            
+            if (project) {
+                document.getElementById('modal-title').textContent = 'Modifier le projet';
+                document.getElementById('projectId').value = project.id;
+                document.getElementById('projectTitle').value = project.title;
+                document.getElementById('projectDescription').value = project.description || '';
+                document.getElementById('projectPriority').value = project.priority;
+                document.getElementById('projectDeadline').value = project.deadline || '';
+                document.getElementById('projectTags').value = project.tags ? project.tags.join(', ') : '';
+                document.getElementById('projectNotes').value = project.notes || '';
+                selectEmoji(project.emoji || '🎯');
+            } else {
+                document.getElementById('modal-title').textContent = 'Nouveau projet';
+                document.getElementById('projectId').value = '';
+                document.getElementById('projectTitle').value = '';
+                document.getElementById('projectDescription').value = '';
+                document.getElementById('projectPriority').value = 'normal';
+                document.getElementById('projectDeadline').value = '';
+                document.getElementById('projectTags').value = '';
+                document.getElementById('projectNotes').value = '';
+                selectEmoji('🎯');
+            }
+            
+            document.getElementById('projectStatus').value = status;
+            document.getElementById('projectModal').classList.add('show');
+            setTimeout(() => document.getElementById('projectTitle').focus(), 100);
+        }
+        
+        function closeProjectModal() {
+            document.getElementById('projectModal').classList.remove('show');
+            editingProject = null;
+        }
+        
+        function saveProject(e) {
+            e.preventDefault();
+            
+            const space = spaces[currentSpace];
+            const id = document.getElementById('projectId').value;
+            const title = document.getElementById('projectTitle').value.trim();
+            const tags = document.getElementById('projectTags').value
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t);
+            
+            if (!title) return;
+            
+            if (id) {
+                // Modifier
+                const project = space.projects.find(p => p.id == id);
+                if (project) {
+                    project.emoji = selectedEmoji;
+                    project.title = title;
+                    project.description = document.getElementById('projectDescription').value.trim();
+                    project.priority = document.getElementById('projectPriority').value;
+                    project.deadline = document.getElementById('projectDeadline').value;
+                    project.tags = tags;
+                    project.notes = document.getElementById('projectNotes').value.trim();
+                }
+            } else {
+                // Créer
                 const project = {
                     id: Date.now(),
-                    title: title.trim(),
-                    status: status,
-                    priority: 'normal',
+                    emoji: selectedEmoji,
+                    title: title,
+                    description: document.getElementById('projectDescription').value.trim(),
+                    status: document.getElementById('projectStatus').value,
+                    priority: document.getElementById('projectPriority').value,
+                    deadline: document.getElementById('projectDeadline').value,
+                    tags: tags,
+                    notes: document.getElementById('projectNotes').value.trim(),
                     progress: 0,
                     created: new Date().toISOString()
                 };
-                
-                spaces[currentSpace].projects.push(project);
-                saveData();
-                renderProjects();
-                updateStats();
+                space.projects.push(project);
+            }
+            
+            saveData();
+            renderProjects();
+            updateStats();
+            closeProjectModal();
+        }
+        
+        // Éditer un projet
+        function editProject(id) {
+            const space = spaces[currentSpace];
+            const project = space.projects.find(p => p.id === id);
+            if (project) {
+                openProjectModal(project.status, project);
             }
         }
-
-        // Suppression
+        
+        // Supprimer un projet
         function deleteProject(id) {
             if (confirm('Supprimer ce projet ?')) {
                 const space = spaces[currentSpace];
@@ -629,67 +1068,136 @@
                 updateStats();
             }
         }
-
-        // Modification
-        function editProject(id) {
+        
+        // Mettre à jour la progression
+        function updateProgress(id, delta) {
             const space = spaces[currentSpace];
             const project = space.projects.find(p => p.id === id);
             if (project) {
-                const newTitle = prompt('Nouveau titre :', project.title);
-                if (newTitle && newTitle.trim()) {
-                    project.title = newTitle.trim();
-                    
-                    if (project.status === 'en-cours') {
-                        const newProgress = prompt('Progression (%) :', project.progress);
-                        if (newProgress !== null) {
-                            project.progress = Math.max(0, Math.min(100, parseInt(newProgress) || 0));
-                        }
-                    }
-                    
-                    saveData();
-                    renderProjects();
-                }
+                project.progress = Math.max(0, Math.min(100, (project.progress || 0) + delta));
+                saveData();
+                renderProjects();
             }
         }
-
+        
+        // Toggle notes
+        function toggleNotes(id) {
+            const notesEl = document.getElementById(`notes-${id}`);
+            if (notesEl) {
+                notesEl.classList.toggle('show');
+            }
+        }
+        
         // Drag & Drop
         function handleDragStart(e, projectId) {
-            draggedItem = projectId;
+            const space = spaces[currentSpace];
+            draggedProject = space.projects.find(p => p.id === projectId);
             e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
         }
-
+        
         function handleDragOver(e) {
             e.preventDefault();
+            e.currentTarget.classList.add('drop-active');
         }
-
+        
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drop-active');
+        }
+        
         function handleDrop(e, newStatus) {
             e.preventDefault();
+            e.currentTarget.classList.remove('drop-active');
             
-            if (draggedItem) {
-                const space = spaces[currentSpace];
-                const project = space.projects.find(p => p.id === draggedItem);
+            if (draggedProject) {
+                draggedProject.status = newStatus;
                 
-                if (project) {
-                    project.status = newStatus;
-                    
-                    // Si terminé, mettre la progression à 100%
-                    if (newStatus === 'termine') {
-                        project.progress = 100;
-                    }
-                    
-                    saveData();
-                    renderProjects();
-                    updateStats();
+                // Si terminé, mettre progression à 100%
+                if (newStatus === 'termine') {
+                    draggedProject.progress = 100;
                 }
+                
+                saveData();
+                renderProjects();
+                updateStats();
                 
                 // Nettoyer
                 document.querySelectorAll('.dragging').forEach(el => {
                     el.classList.remove('dragging');
                 });
-                draggedItem = null;
+                draggedProject = null;
             }
         }
-
+        
+        // Modal espace
+        function openSpaceModal() {
+            document.getElementById('spaceName').value = '';
+            selectSpaceEmoji('🏢');
+            document.getElementById('spaceModal').classList.add('show');
+            setTimeout(() => document.getElementById('spaceName').focus(), 100);
+        }
+        
+        function closeSpaceModal() {
+            document.getElementById('spaceModal').classList.remove('show');
+        }
+        
+        function saveSpace(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('spaceName').value.trim();
+            if (!name) return;
+            
+            const id = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+            spaces[id] = {
+                id: id,
+                name: name,
+                emoji: selectedSpaceEmoji,
+                projects: []
+            };
+            
+            currentSpace = id;
+            saveData();
+            renderTabs();
+            renderProjects();
+            updateStats();
+            closeSpaceModal();
+        }
+        
+        // Sélection emoji
+        function selectEmoji(emoji) {
+            selectedEmoji = emoji;
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.style.background = btn.textContent === emoji ? 'rgba(59, 130, 246, 0.2)' : '';
+            });
+        }
+        
+        function selectSpaceEmoji(emoji) {
+            selectedSpaceEmoji = emoji;
+            document.querySelectorAll('.space-emoji-btn').forEach(btn => {
+                btn.style.background = btn.textContent === emoji ? 'rgba(59, 130, 246, 0.2)' : '';
+            });
+        }
+        
+        // Recherche
+        function searchProjects(term) {
+            const cards = document.querySelectorAll('.project-card');
+            const searchTerm = term.toLowerCase();
+            
+            cards.forEach(card => {
+                const title = card.querySelector('.card-title').textContent.toLowerCase();
+                const description = card.querySelector('.card-description');
+                const descText = description ? description.textContent.toLowerCase() : '';
+                const tags = card.querySelectorAll('.tag');
+                const tagText = Array.from(tags).map(t => t.textContent.toLowerCase()).join(' ');
+                
+                const matches = title.includes(searchTerm) || 
+                               descText.includes(searchTerm) || 
+                               tagText.includes(searchTerm);
+                
+                card.style.display = matches ? '' : 'none';
+            });
+        }
+        
         // Stats
         function updateStats() {
             const space = spaces[currentSpace];
@@ -697,28 +1205,13 @@
             
             const total = space.projects.length;
             const active = space.projects.filter(p => p.status === 'en-cours').length;
-            
-            // Projets créés cette semaine
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            const thisWeek = space.projects.filter(p => new Date(p.created) > weekAgo).length;
+            const done = space.projects.filter(p => p.status === 'termine').length;
             
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-active').textContent = active;
-            document.getElementById('stat-week').textContent = thisWeek;
+            document.getElementById('stat-done').textContent = done;
         }
-
-        // Recherche
-        function filterProjects(term) {
-            const cards = document.querySelectorAll('.card');
-            const searchTerm = term.toLowerCase();
-            
-            cards.forEach(card => {
-                const title = card.querySelector('.card-title').textContent.toLowerCase();
-                card.style.display = title.includes(searchTerm) ? '' : 'none';
-            });
-        }
-
+        
         // Export
         function exportData() {
             const dataStr = JSON.stringify(spaces, null, 2);
@@ -730,26 +1223,18 @@
             link.setAttribute('download', exportFileDefaultName);
             link.click();
         }
-
-        // Création d'espace
-        function createSpace() {
-            const name = prompt('Nom du nouvel espace :');
-            if (name && name.trim()) {
-                const id = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-                spaces[id] = {
-                    name: name.trim(),
-                    projects: []
-                };
-                currentSpace = id;
-                saveData();
-                renderTabs();
-                renderProjects();
-                updateStats();
-            }
-        }
-
+        
         // Utilitaires
         function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'short',
+                year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+            });
+        }
+        
+        function daysSince(dateStr) {
             const date = new Date(dateStr);
             const now = new Date();
             const days = Math.floor((now - date) / (1000 * 60 * 60 * 24));
@@ -758,45 +1243,13 @@
             if (days === 1) return "Hier";
             if (days < 7) return `${days}j`;
             if (days < 30) return `${Math.floor(days / 7)}sem`;
-            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+            return formatDate(dateStr);
         }
-
-        // Modal
-        function closeModal() {
-            document.getElementById('projectModal').classList.remove('show');
-        }
-
-        function saveProject(e) {
-            e.preventDefault();
-            const title = document.getElementById('projectTitle').value;
-            const priority = document.getElementById('projectPriority').value;
-            
-            if (title.trim()) {
-                const project = {
-                    id: Date.now(),
-                    title: title.trim(),
-                    status: 'idees',
-                    priority: priority,
-                    progress: 0,
-                    created: new Date().toISOString()
-                };
-                
-                spaces[currentSpace].projects.push(project);
-                saveData();
-                renderProjects();
-                updateStats();
-                closeModal();
-                
-                // Reset form
-                document.getElementById('projectTitle').value = '';
-                document.getElementById('projectPriority').value = 'normal';
-            }
-        }
-
-        // Initialisation au chargement
+        
+        // Initialisation
         window.onload = init;
-
-        // Sauvegarde auto toutes les 30 secondes
+        
+        // Sauvegarde auto
         setInterval(saveData, 30000);
     </script>
 </body>
