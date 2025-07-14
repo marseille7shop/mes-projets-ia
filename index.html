@@ -9,15 +9,19 @@
                                 if (key.startsWith('projects-')) {
                                     const tabId = key.replace('projects-', '');
                                     if (!spaces[tabId]) {
-                                        const projects = JSON.parse(localStorage.getItem(key));
-                                        if (projects && projects.length > 0) {
-                                            spaces[tabId] = {
-                                                id: tabId,
-                                                name: tabId.charAt(0).toUpperCase() + tabId.slice(1),
-                                                emoji: '📁',
-                                                projects: projects
-                                            };
-                                            console.log(`Données récupérées depuis ${key}`);
+                                        try {
+                                            const projects = JSON.parse(localStorage.getItem(key));
+                                            if (projects && projects.length > 0) {
+                                                spaces[tabId] = {
+                                                    id: tabId,
+                                                    name: tabId.charAt(0).toUpperCase() + tabId.slice(1),
+                                                    emoji: '📁',
+                                                    projects: projects
+                                                };
+                                                console.log(`Données récupérées depuis ${key}`);
+                                            }
+                                        } catch (e) {
+                                            console.error(`Erreur lors de la récupération de ${key}:`, e);
                                         }
                                     }
                                 }
